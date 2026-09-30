@@ -123,6 +123,19 @@ test("buildPreAggRow falls back conversions to form_submissions + new_subscriber
   var row = engine.buildPreAggRow({ form_submissions: "3", new_subscribers: "2" }, "Forms", "2026-08-04");
   assert.equal(row.conversions, 5);
 });
+test("a plain 'signups' column still maps to new_subscribers (conversions fallback), not the new interest_signups field", function () {
+  var mapped = engine.mapRow({ date: "2026-08-04", signups: "7" }, engine.CANONICAL_ALIAS_TO_FIELD);
+  assert.equal(mapped.new_subscribers, 7);
+  assert.equal(mapped.interest_signups, undefined);
+});
+test("buildPreAggRow carries the campaign-outcome fields interest_signups/applications, defaulting to 0", function () {
+  var row = engine.buildPreAggRow({ interest_signups: "40", applications: "12" }, "Forms", "2026-08-04");
+  assert.equal(row.interest_signups, 40);
+  assert.equal(row.applications, 12);
+  var bare = engine.buildPreAggRow({ reach: "10" }, "Forms", "2026-08-04");
+  assert.equal(bare.interest_signups, 0);
+  assert.equal(bare.applications, 0);
+});
 test("looksCanonical requires both a week-like and a channel-like column", function () {
   assert.equal(engine.looksCanonical(new Set(["week", "channel"])), true);
   assert.equal(engine.looksCanonical(new Set(["week"])), false);
