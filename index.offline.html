@@ -2830,6 +2830,61 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     y += 4;
     buildInterpretation(week, channelSet).forEach(function (para) { bodyText(para, 10.5); y += 4; });
 
+    // Study — calls the same engine functions renderStudy() does, so the
+    // PDF matches the on-screen study exactly (acceptance criteria).
+    if (state.campaign) {
+      doc.addPage(); y = margin;
+      var campaign = state.campaign;
+      var today = new Date().toISOString().slice(0, 10);
+      var series = outcomeSeries(state.rows, campaign);
+      var progress = progressToGoal(series, campaign, today);
+      var funnel = funnelByStage(state.rows, campaign);
+      var studyResult = buildFindings({ rows: state.rows, actions: state.actions, campaign: campaign, today: today });
+
+      heading("Study — " + campaign.name, 16);
+      bodyText(campaign.outcomeLabel + " · " + campaign.startDate + " to " + campaign.deadline, 10, [90, 90, 90]);
+      y += 6;
+
+      heading("Goal status", 13);
+      bodyText((GOAL_STATUS_LABELS[progress.status] || progress.status) + " — " + fmt(progress.current) + " of " + fmt(progress.target) +
+        " (" + fmt(progress.remaining) + " remaining, " + progress.weeksLeft + " week(s) left)", 10.5);
+      if (progress.recentPacePerWeek !== null) {
+        bodyText("Recent pace: " + progress.recentPacePerWeek.toFixed(1) + " / week" +
+          (progress.paceNeededPerWeek !== null ? " · pace needed: " + progress.paceNeededPerWeek.toFixed(1) + " / week" : ""), 9.5, [110, 110, 110]);
+      }
+      y += 6;
+
+      heading("Funnel — campaign to date", 13);
+      [
+        { name: "Reach", value: funnel.reach },
+        { name: "Engagement", value: funnel.engagements },
+        { name: "Clicks", value: funnel.clicks },
+        { name: "Sign-ups", value: funnel.conversions }
+      ].forEach(function (s) {
+        var pct = funnel.reach > 0 ? (s.value / funnel.reach) * 100 : 0;
+        ensureSpace(14);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(30, 30, 30);
+        doc.text(s.name + ": " + fmt(s.value) + (funnel.reach > 0 ? " (" + pct.toFixed(1) + "% of reach)" : ""), margin, y);
+        y += 15;
+      });
+      y += 6;
+
+      heading("Findings", 13);
+      if (!studyResult.findings.length) {
+        bodyText("No findings yet — upload metrics and log actions for this campaign to see findings here.", 10);
+      }
+      studyResult.findings.forEach(function (f) {
+        var typeLabel = f.type === "observed" ? "Observed" : f.type === "associated" ? "Associated" : "Not testable";
+        var text = state.study.findingsEdited[f.id] != null ? state.study.findingsEdited[f.id] : f.text;
+        bodyText(pdfSafeText(typeLabel + (f.week ? " (week of " + f.week + ")" : "") + ": " + text), 10.5);
+        y += 3;
+      });
+      y += 6;
+
+      heading("Limits", 13);
+      studyResult.limits.forEach(function (l) { bodyText(pdfSafeText("• " + l), 10); });
+    }
+
     // Footer on every page
     var pageCount = doc.internal.getNumberOfPages();
     for (var p = 1; p <= pageCount; p++) {
