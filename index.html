@@ -1297,6 +1297,7 @@
     }
     limits.push("These are observations, not explanations of why numbers moved - counts are too small here for causal inference.");
 
+    findings.forEach(function (f, i) { f.id = f.type + ":" + (f.week || "overall") + ":" + i; });
     return { findings: findings, limits: limits };
   }
   // CDLS-ENGINE:END
@@ -1325,7 +1326,7 @@
     campaign: null,
     actions: [],
     outcomes: [],
-    study: { findings: [], goalStatus: {}, limits: [] }
+    study: { findings: [], goalStatus: {}, limits: [], findingsEdited: {} }
   };
   var chartInstance = null;
 
@@ -1599,18 +1600,89 @@
   });
 
   // ---------- Pulse v2: study (goal status, funnel, findings, limits) ----------
-  // Filled in fully once the section-6 engine functions land; for now the
-  // study card just shows the empty state so the rest of the page works.
+  var GOAL_STATUS_LABELS = {
+    reached: "Goal reached", on_pace: "On pace", behind: "Behind pace", insufficient_data: "Not enough data yet"
+  };
+
   function renderStudy() {
     var empty = document.getElementById("studyEmpty");
     var body = document.getElementById("studyBody");
-    if (!state.campaign) {
+    var campaign = state.campaign;
+    if (!campaign) {
       empty.hidden = false;
       body.hidden = true;
       return;
     }
     empty.hidden = true;
     body.hidden = false;
+
+    var today = new Date().toISOString().slice(0, 10);
+    var series = outcomeSeries(state.rows, campaign);
+    var progress = progressToGoal(series, campaign, today);
+    var funnel = funnelByStage(state.rows, campaign);
+    var result = buildFindings({ rows: state.rows, actions: state.actions, campaign: campaign, today: today });
+    state.study.goalStatus = progress;
+    state.study.findings = result.findings;
+    state.study.limits = result.limits;
+
+    var statusEl = document.getElementById("studyGoalStatus");
+    statusEl.innerHTML =
+      '<span class="goal-status-badge ' + progress.status + '">' + (GOAL_STATUS_LABELS[progress.status] || progress.status) + '</span>' +
+      '<div class="campaign-summary-row">' +
+      '<div class="item"><div class="label">Current</div><div class="value">' + fmt(progress.current) + ' of ' + fmt(progress.target) + '</div></div>' +
+      '<div class="item"><div class="label">Remaining</div><div class="value">' + fmt(progress.remaining) + '</div></div>' +
+      '<div class="item"><div class="label">Weeks left</div><div class="value">' + progress.weeksLeft + '</div></div>' +
+      '<div class="item"><div class="label">Pace needed / wk</div><div class="value">' + (progress.paceNeededPerWeek !== null ? progress.paceNeededPerWeek.toFixed(1) : "—") + '</div></div>' +
+      '<div class="item"><div class="label">Recent pace / wk</div><div class="value">' + (progress.recentPacePerWeek !== null ? progress.recentPacePerWeek.toFixed(1) : "—") + '</div></div>' +
+      '</div>';
+
+    var funnelEl = document.getElementById("studyFunnel");
+    funnelEl.innerHTML = "";
+    var stages = [
+      { name: "Reach", value: funnel.reach, colorVar: "--seq-300" },
+      { name: "Engagement", value: funnel.engagements, colorVar: "--seq-400" },
+      { name: "Clicks", value: funnel.clicks, colorVar: "--seq-500" },
+      { name: "Sign-ups", value: funnel.conversions, colorVar: "--seq-600" }
+    ];
+    stages.forEach(function (s) {
+      var pct = funnel.reach > 0 ? (s.value / funnel.reach) * 100 : 0;
+      var row = document.createElement("div");
+      row.className = "funnel-stage";
+      row.innerHTML =
+        '<div class="stage-head"><span class="name">' + s.name + '</span>' +
+        '<span class="value">' + fmt(s.value) + (funnel.reach > 0 ? " · " + pct.toFixed(1) + "% of reach" : "") + '</span></div>' +
+        '<div class="funnel-track"><div class="funnel-fill" style="width:' + Math.min(100, Math.max(pct, s.value > 0 ? 1 : 0)) + '%; background: var(' + s.colorVar + ')"></div></div>';
+      funnelEl.appendChild(row);
+    });
+
+    var findingsEl = document.getElementById("studyFindings");
+    findingsEl.innerHTML = "";
+    if (!result.findings.length) {
+      findingsEl.innerHTML = '<div class="empty-state">No findings yet — upload metrics and log actions for this campaign to see findings here.</div>';
+    }
+    result.findings.forEach(function (f) {
+      var row = document.createElement("div");
+      row.className = "finding-row";
+      var typeLabel = f.type === "observed" ? "Observed" : f.type === "associated" ? "Associated" : "Not testable";
+      row.innerHTML = '<div class="finding-type">' + typeLabel + (f.week ? " · week of " + f.week : "") + '</div>';
+      var textarea = document.createElement("textarea");
+      textarea.value = state.study.findingsEdited[f.id] != null ? state.study.findingsEdited[f.id] : f.text;
+      textarea.addEventListener("change", function () { state.study.findingsEdited[f.id] = textarea.value; });
+      row.appendChild(textarea);
+      var evidence = document.createElement("div");
+      evidence.className = "finding-evidence";
+      evidence.textContent = "Evidence: " + f.evidence;
+      row.appendChild(evidence);
+      findingsEl.appendChild(row);
+    });
+
+    var limitsEl = document.getElementById("studyLimits");
+    limitsEl.innerHTML = "";
+    result.limits.forEach(function (l) {
+      var li = document.createElement("li");
+      li.textContent = l;
+      limitsEl.appendChild(li);
+    });
   }
 
   function renderIngestRangeCount() {
