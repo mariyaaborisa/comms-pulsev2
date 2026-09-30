@@ -195,6 +195,29 @@ test("runAdapter reshapes raw rows into pre-agg rows via the adapter's alias map
   assert.equal(out[0].clicks, 40);
 });
 
+// ---- Comms Impact Tracker adapter (Pulse v2, step 6) ----
+test("detectAdapter matches the Comms Impact Tracker by its own (non-canonical) column names", function () {
+  var headers = ["Week Ending", "Comms Channel", "Interest Sign-Ups", "Completed Applications"];
+  var adapter = engine.detectAdapter(headers, "comms_impact_tracker_export.csv");
+  assert.equal(adapter && adapter.id, "comms_impact_tracker");
+});
+test("looksCanonical does not claim a Comms Impact Tracker file first (its week/channel columns aren't canonical aliases)", function () {
+  var normSet = new Set(["week_ending", "comms_channel", "interest_sign_ups", "completed_applications"]);
+  assert.equal(engine.looksCanonical(normSet), false);
+});
+test("runAdapter on the Comms Impact Tracker uses each row's own channel column (channel: null)", function () {
+  var adapter = engine.ADAPTERS.filter(function (a) { return a.id === "comms_impact_tracker"; })[0];
+  var out = engine.runAdapter(adapter, [
+    { "Week Ending": "2026-07-05", "Comms Channel": "Instagram", "Interest Sign-Ups": "12", "Completed Applications": "3" },
+    { "Week Ending": "2026-07-05", "Comms Channel": "Newsletter", "Interest Sign-Ups": "5", "Completed Applications": "1" }
+  ]);
+  assert.equal(out.length, 2);
+  assert.equal(out[0].channel, "Instagram");
+  assert.equal(out[0].interest_signups, 12);
+  assert.equal(out[0].applications, 3);
+  assert.equal(out[1].channel, "Newsletter");
+});
+
 // ---- generateSampleData ----
 test("generateSampleData is deterministic and produces 6 channels x 10 weeks", function () {
   var a = engine.generateSampleData();

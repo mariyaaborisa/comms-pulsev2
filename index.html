@@ -857,6 +857,35 @@
         conversions: ["conversions"],
         new_subscribers: ["new_subscribers", "subscribed", "signups"]
       })
+    },
+    {
+      // A CDLS-authored tracking sheet (not a raw platform export), logging
+      // per-channel weekly counts against a specific campaign's outcomes -
+      // interest sign-ups and completed applications, rather than the
+      // platform-level reach/engagement the exports above carry. channel is
+      // null (not a fixed string): unlike the single-channel platform
+      // exports, this file's channel varies row to row, like the canonical
+      // schema - see runAdapter's channel fallback above.
+      //
+      // Its own week/channel column names ("Week Ending" / "Comms Channel")
+      // are deliberately not canonical aliases (week/date/... , channel/
+      // source/...): if they were, looksCanonical() would already claim the
+      // file via the canonical path before detectAdapter ever runs, making
+      // this adapter dead code. The metric columns can and do overlap with
+      // canonical aliases - looksCanonical never looks at those - so either
+      // path maps them to the same fields.
+      id: "comms_impact_tracker",
+      label: "Comms Impact Tracker",
+      channel: null,
+      filenameHints: [/comms.?impact/i, /impact.?tracker/i],
+      signature: ["week_ending", "comms_channel", "interest_sign_ups", "completed_applications"],
+      aliasToField: buildAliasToField({
+        date: ["week_ending"],
+        channel: ["comms_channel"],
+        interest_signups: ["interest_signups", "interest_sign_ups"],
+        applications: ["applications", "completed_applications", "second_stage_applications"],
+        conversions: ["conversions"]
+      })
     }
   ];
   var ADAPTER_MATCH_THRESHOLD = 0.4;
@@ -877,7 +906,11 @@
     var out = [];
     rawRows.forEach(function (raw) {
       var mapped = mapRow(raw, adapter.aliasToField);
-      var row = buildPreAggRow(mapped, adapter.channel, mapped.date);
+      // adapter.channel is a fixed channel for a single-channel platform
+      // export; null means the file carries its own per-row channel column
+      // (the Comms Impact Tracker, below), like the canonical schema does.
+      var channel = adapter.channel || mapped.channel;
+      var row = buildPreAggRow(mapped, channel, mapped.date);
       if (row) out.push(row);
     });
     return out;
