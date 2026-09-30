@@ -1021,6 +1021,17 @@
     return errors;
   }
 
+  // ---------- Pulse v2: study file (schemaVersion check only - pure) ----------
+  function validateStudyFile(payload) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return { valid: false, error: "This doesn't look like a Pulse study file." };
+    }
+    if (payload.schemaVersion !== 1) {
+      return { valid: false, error: "This study file is schema version " + JSON.stringify(payload.schemaVersion) + ", which this version of Pulse doesn't understand (expected version 1)." };
+    }
+    return { valid: true, error: null };
+  }
+
   // ---------- Pulse v2: study engine (section 6 of the architecture brief) ----------
   // Pure: takes rows/actions/campaign data in, returns plain data out. Never
   // writes causal wording ("caused", "because of", "led to") - only timing
@@ -2740,6 +2751,50 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
+  // ---------- Pulse v2: study file (persistence without storage) ----------
+  // weeklyRows are the aggregated canonical rows only (state.rows) - never
+  // the raw uploads, and never anything but the counts already in memory,
+  // so a study file carries no personal data by the same construction as
+  // the rest of the tool.
+  function exportStudy() {
+    var payload = {
+      schemaVersion: 1,
+      campaign: state.campaign,
+      actions: state.actions,
+      outcomes: state.outcomes,
+      weeklyRows: state.rows,
+      findingsEdited: state.study.findingsEdited
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    var slug = (state.campaign && state.campaign.name ? state.campaign.name : "study").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    a.download = "pulse-study-" + (slug || "untitled") + "-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  // Restores state through the same shape the mutation helpers write
+  // (state.campaign, state.actions, state.outcomes), then calls loadRows()
+  // once at the end - which itself calls renderAll() - so importing a
+  // study file renders exactly once, not once per restored field.
+  function importStudy(payload) {
+    var check = validateStudyFile(payload);
+    if (!check.valid) {
+      alert(check.error);
+      return false;
+    }
+    state.campaign = payload.campaign || null;
+    state.actions = Array.isArray(payload.actions) ? payload.actions : [];
+    state.outcomes = Array.isArray(payload.outcomes) ? payload.outcomes : [];
+    state.study.findingsEdited = (payload.findingsEdited && typeof payload.findingsEdited === "object") ? payload.findingsEdited : {};
+    loadRows(Array.isArray(payload.weeklyRows) ? payload.weeklyRows : [], false);
+    return true;
+  }
+
   // ---------- Theme ----------
   var themeState = "system";
   function applyTheme() {
@@ -2770,6 +2825,26 @@
 
   document.getElementById("templateBtn").addEventListener("click", downloadTemplate);
   document.getElementById("pdfReportBtn").addEventListener("click", generatePdfReport);
+  document.getElementById("exportStudyBtn").addEventListener("click", exportStudy);
+  document.getElementById("importStudyInput").addEventListener("change", function () {
+    var file = this.files[0];
+    var input = this;
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var payload;
+      try {
+        payload = JSON.parse(reader.result);
+      } catch (e) {
+        alert("This file isn't valid JSON, so it can't be a Pulse study file.");
+        input.value = "";
+        return;
+      }
+      importStudy(payload);
+      input.value = "";
+    };
+    reader.readAsText(file);
+  });
   ["reloadSampleBtn", "reloadSampleBtn2"].forEach(function (id) {
     document.getElementById(id).addEventListener("click", function () { loadRows(generateSampleData(), true); });
   });

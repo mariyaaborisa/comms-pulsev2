@@ -38,7 +38,7 @@ var EXPORTS = [
   "runAdapter", "generateSampleData", "sumMetric", "growthSentence", "decodeTextBuffer",
   "validateCampaignFields", "computeFunnelForWeek", "bucketActionsByWeek", "classifyWeek",
   "outcomeSeries", "progressToGoal", "liftForWeek", "RESPONSE_WEEKS", "responseWindow",
-  "channelMatch", "unattributed", "funnelByStage", "buildFindings"
+  "channelMatch", "unattributed", "funnelByStage", "buildFindings", "validateStudyFile"
 ];
 
 function loadEngine() {
@@ -458,6 +458,21 @@ test("buildFindings never states a percentage when the underlying baseline is un
   var associated = result.findings.filter(function (f) { return f.type === "associated" && f.week === "2026-07-13"; });
   assert.equal(associated.length, 1);
   assert.doesNotMatch(associated[0].text, /%/);
+});
+
+// ---- validateStudyFile (Pulse v2, step 7) ----
+test("validateStudyFile accepts schemaVersion 1", function () {
+  assert.equal(engine.validateStudyFile({ schemaVersion: 1, campaign: null }).valid, true);
+});
+test("validateStudyFile rejects an unknown schema version with a plain-language message", function () {
+  var result = engine.validateStudyFile({ schemaVersion: 2 });
+  assert.equal(result.valid, false);
+  assert.match(result.error, /schema version/);
+});
+test("validateStudyFile rejects non-object input", function () {
+  assert.equal(engine.validateStudyFile(null).valid, false);
+  assert.equal(engine.validateStudyFile([1, 2, 3]).valid, false);
+  assert.equal(engine.validateStudyFile("not an object").valid, false);
 });
 
 console.log("");
