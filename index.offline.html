@@ -815,6 +815,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 (function () {
   "use strict";
 
+  // CDLS-ENGINE:START
+  // Pure calculations only: no DOM access, no reads of global `state`.
+  // Every function here takes plain data in and returns plain data out, so
+  // tests/engine.test.js can extract this block verbatim and run it under
+  // Node against fixtures. Render/report code below calls these functions;
+  // it never reimplements their math.
+
   // ---------- Data contract: header aliases ----------
   // Canonical schema (the ideal input): one row per channel x ISO week.
   function buildAliasToField(defs) {
@@ -1142,6 +1149,47 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return rows;
   }
 
+  function sumMetric(rows, week, channels, key) {
+    var total = 0;
+    rows.forEach(function (r) {
+      if (r.week === week && channels.has(r.channel)) total += r[key];
+    });
+    return total;
+  }
+
+  function growthSentence(label, cur, prev) {
+    if (prev === 0) {
+      if (cur === 0) return label + " stayed flat at 0 this week.";
+      return label + " is new this week (" + fmt(cur) + ") with no prior week to compare.";
+    }
+    var diff = cur - prev, pct = Math.abs((diff / prev) * 100);
+    if (diff > 0) return label + " rose " + pct.toFixed(0) + "% from last week.";
+    if (diff < 0) return label + " fell " + pct.toFixed(0) + "% from last week.";
+    return label + " held steady week-over-week.";
+  }
+
+  // Decodes a text file's bytes, sniffing a UTF-16LE/BE BOM (some platform
+  // exports - e.g. Meta's "Top content formats" - ship UTF-16 despite being
+  // .csv) and falling back to UTF-8 otherwise. Also strips a leading
+  // "sep=,"-style hint line, which is a display hint for Excel, not data.
+  function decodeTextBuffer(buf) {
+    var bytes = new Uint8Array(buf);
+    var text;
+    if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+      text = new TextDecoder("utf-16le").decode(buf);
+    } else if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+      text = new TextDecoder("utf-16be").decode(buf);
+    } else {
+      text = new TextDecoder("utf-8").decode(buf);
+    }
+    text = text.replace(/^﻿/, "");
+    var nl = text.indexOf("\n");
+    var firstLine = (nl === -1 ? text : text.slice(0, nl)).trim();
+    if (/^sep=/i.test(firstLine)) text = nl === -1 ? "" : text.slice(nl + 1);
+    return text;
+  }
+  // CDLS-ENGINE:END
+
   // ---------- Palette ----------
   var SERIES_VARS = ["--series-1", "--series-2", "--series-3", "--series-4", "--series-5", "--series-6", "--series-7", "--series-8"];
   function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
@@ -1199,14 +1247,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if (!periods.includes(state.formatMixPeriod)) {
       state.formatMixPeriod = periods.length ? periods[periods.length - 1] : null;
     }
-  }
-
-  function sumMetric(rows, week, channels, key) {
-    var total = 0;
-    rows.forEach(function (r) {
-      if (r.week === week && channels.has(r.channel)) total += r[key];
-    });
-    return total;
   }
 
   // ---------- Rendering ----------
@@ -1615,17 +1655,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return vals.reduce(function (a, b) { return a + b; }, 0) / vals.length;
   }
 
-  function growthSentence(label, cur, prev) {
-    if (prev === 0) {
-      if (cur === 0) return label + " stayed flat at 0 this week.";
-      return label + " is new this week (" + fmt(cur) + ") with no prior week to compare.";
-    }
-    var diff = cur - prev, pct = Math.abs((diff / prev) * 100);
-    if (diff > 0) return label + " rose " + pct.toFixed(0) + "% from last week.";
-    if (diff < 0) return label + " fell " + pct.toFixed(0) + "% from last week.";
-    return label + " held steady week-over-week.";
-  }
-
   // Returns an array of paragraph strings for the PDF's "What this means" section.
   function buildInterpretation(week, channelSet) {
     var paragraphs = [];
@@ -1912,26 +1941,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   // ---------- Ingest ----------
-  // Decodes a text file's bytes, sniffing a UTF-16LE/BE BOM (some platform
-  // exports - e.g. Meta's "Top content formats" - ship UTF-16 despite being
-  // .csv) and falling back to UTF-8 otherwise. Also strips a leading
-  // "sep=,"-style hint line, which is a display hint for Excel, not data.
-  function decodeTextBuffer(buf) {
-    var bytes = new Uint8Array(buf);
-    var text;
-    if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
-      text = new TextDecoder("utf-16le").decode(buf);
-    } else if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
-      text = new TextDecoder("utf-16be").decode(buf);
-    } else {
-      text = new TextDecoder("utf-8").decode(buf);
-    }
-    text = text.replace(/^﻿/, "");
-    var nl = text.indexOf("\n");
-    var firstLine = (nl === -1 ? text : text.slice(0, nl)).trim();
-    if (/^sep=/i.test(firstLine)) text = nl === -1 ? "" : text.slice(nl + 1);
-    return text;
-  }
 
   // Excel/Meta "Top content formats" exports aren't a single header+rows grid -
   // they're stacked mini-tables: a one-cell section label, a format-name header
