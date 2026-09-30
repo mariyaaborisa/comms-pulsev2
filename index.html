@@ -212,6 +212,39 @@
 
   .theme-toggle { font-size: 13px; }
 
+  .field-grid { display: flex; flex-wrap: wrap; gap: 12px 16px; }
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 160px; flex: 1 1 200px; }
+  .field-wide { flex: 2 1 320px; }
+  .field label { font-size: 13px; color: var(--text-secondary); }
+  .field input, .field select {
+    font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-primary);
+  }
+  .form-errors { color: var(--critical); font-size: 13px; margin: 10px 0 0; }
+  .field-error { color: var(--critical); font-size: 12px; margin-top: 2px; }
+
+  .campaign-summary-row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 12px; }
+  .campaign-summary-row .item { min-width: 140px; }
+  .campaign-summary-row .item .label { font-size: 12px; color: var(--text-secondary); }
+  .campaign-summary-row .item .value { font-size: 15px; font-weight: 600; }
+
+  .goal-status-badge {
+    display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 14px;
+    font-size: 13px; font-weight: 600; margin-bottom: 12px;
+  }
+  .goal-status-badge.reached { background: color-mix(in srgb, var(--good) 18%, var(--surface-1)); color: var(--good-text); }
+  .goal-status-badge.on_pace { background: color-mix(in srgb, var(--series-1) 16%, var(--surface-1)); color: var(--series-1); }
+  .goal-status-badge.behind { background: color-mix(in srgb, var(--critical) 16%, var(--surface-1)); color: var(--critical); }
+  .goal-status-badge.insufficient_data { background: color-mix(in srgb, var(--text-muted) 16%, var(--surface-1)); color: var(--text-secondary); }
+
+  .finding-row { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .finding-row .finding-type { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); margin-bottom: 4px; }
+  .finding-row textarea {
+    width: 100%; font: inherit; font-size: 14px; border: none; background: transparent; color: var(--text-primary);
+    resize: vertical; min-height: 40px; padding: 0;
+  }
+  .finding-row .finding-evidence { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
@@ -251,20 +284,178 @@
     </div>
   </div>
 
+  <section class="card" id="campaignGoal">
+    <h2>Campaign goal</h2>
+    <div id="campaignSummary" hidden></div>
+    <form id="campaignForm">
+      <div class="field-grid">
+        <div class="field">
+          <label for="cg_name">Campaign name</label>
+          <input type="text" id="cg_name" placeholder="e.g. VSTEM Fall 2026">
+        </div>
+        <div class="field">
+          <label for="cg_audience">Audience</label>
+          <select id="cg_audience">
+            <option value="mentee">Mentee</option>
+            <option value="mentor">Mentor</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+        <div class="field field-wide">
+          <label for="cg_outcomeLabel">What does the goal count?</label>
+          <input type="text" id="cg_outcomeLabel" placeholder="e.g. Completed second-stage applications">
+        </div>
+        <div class="field">
+          <label for="cg_outcomeField">Which uploaded field is that?</label>
+          <select id="cg_outcomeField"></select>
+        </div>
+        <div class="field">
+          <label for="cg_targetCount">Target count</label>
+          <input type="number" id="cg_targetCount" min="1" step="1" placeholder="e.g. 20">
+        </div>
+        <div class="field">
+          <label for="cg_startDate">Start date</label>
+          <input type="date" id="cg_startDate">
+        </div>
+        <div class="field">
+          <label for="cg_deadline">Deadline</label>
+          <input type="date" id="cg_deadline">
+        </div>
+        <div class="field">
+          <label for="cg_baselinePerWeek">Baseline per week (optional)</label>
+          <input type="number" id="cg_baselinePerWeek" min="0" step="0.1" placeholder="pre-launch rate, if known">
+        </div>
+        <div class="field">
+          <label for="cg_owner">Owner (role or name, no contact info)</label>
+          <input type="text" id="cg_owner" placeholder="e.g. Comms lead">
+        </div>
+        <div class="field">
+          <label for="cg_group">CDLS group</label>
+          <input type="text" id="cg_group" placeholder="e.g. VSTEM">
+        </div>
+        <div class="field">
+          <label for="cg_rateNumeratorField">Secondary rate — numerator (optional)</label>
+          <select id="cg_rateNumeratorField"><option value="">— none —</option></select>
+        </div>
+        <div class="field">
+          <label for="cg_rateDenominatorField">Secondary rate — denominator</label>
+          <select id="cg_rateDenominatorField"><option value="">— none —</option></select>
+        </div>
+      </div>
+      <p id="campaignFormErrors" class="form-errors" hidden></p>
+      <div class="btn-row" style="margin-top:12px;">
+        <button type="submit" class="btn-primary">Save campaign goal</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card" id="actionLog">
+    <h2>Action log</h2>
+    <p class="format-mix-intro">Log what you did, in under ten seconds. Backfill is fine.</p>
+    <form id="actionForm" class="field-grid">
+      <div class="field">
+        <label for="ac_type">Type</label>
+        <select id="ac_type">
+          <option value="flyer">Flyer</option>
+          <option value="email">Email</option>
+          <option value="social">Social post</option>
+          <option value="partner_post">Partner post</option>
+          <option value="event">Event</option>
+          <option value="reminder">Reminder</option>
+          <option value="word_of_mouth">Word of mouth</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="ac_channel">Channel</label>
+        <input type="text" id="ac_channel" list="ac_channelOptions" placeholder="e.g. Instagram">
+        <datalist id="ac_channelOptions"></datalist>
+      </div>
+      <div class="field">
+        <label for="ac_audience">Audience</label>
+        <select id="ac_audience">
+          <option value="mentee">Mentee</option>
+          <option value="mentor">Mentor</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="ac_date">Date</label>
+        <input type="date" id="ac_date">
+      </div>
+      <div class="field field-wide">
+        <label for="ac_note">Note (optional, one line)</label>
+        <input type="text" id="ac_note" maxlength="140">
+      </div>
+      <div class="field" style="align-self:flex-end;">
+        <button type="submit" class="btn-primary">Log action</button>
+      </div>
+    </form>
+    <div class="table-scroll" style="margin-top:14px;">
+      <table class="detail" id="actionTable">
+        <thead><tr><th>Date</th><th>Type</th><th>Channel</th><th>Audience</th><th>Note</th><th></th></tr></thead>
+        <tbody id="actionTableBody"></tbody>
+      </table>
+    </div>
+    <div id="actionEmpty" class="empty-state" hidden>No actions logged yet.</div>
+  </section>
+
   <section class="card" id="ingest">
     <h2>Import data</h2>
     <div id="dropzone">
       Drag and drop file(s) here, or
       <label for="fileInput">choose files</label>
       <input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,.xls" multiple>
-      <div style="margin-top:10px; font-size:13px;">CSV, TSV, or Excel (.xlsx/.xls). Raw exports from Meta/Facebook, Instagram, LinkedIn, Linktree, and Mailchimp-style newsletters are auto-detected and reshaped to weekly; anything else prompts a quick column-mapping step. See the README for the canonical schema.</div>
+      <div style="margin-top:10px; font-size:13px;">CSV, TSV, or Excel (.xlsx/.xls). Raw exports from Meta/Facebook, Instagram, LinkedIn, Linktree, Mailchimp-style newsletters, and the Comms Impact Tracker are auto-detected and reshaped to weekly; anything else prompts a quick column-mapping step. See the README for the canonical schema.</div>
     </div>
     <div class="btn-row" style="margin-top:12px;">
       <button type="button" id="templateBtn">Download template CSV</button>
       <button type="button" id="reloadSampleBtn2">Reload sample data</button>
       <button type="button" id="clearBtn2">Clear data</button>
     </div>
+    <p id="ingestRangeCount" class="format-mix-intro" style="margin-top:12px;"></p>
   </section>
+
+  <section class="card" id="study">
+    <h2>Study</h2>
+    <div id="studyEmpty" class="empty-state" hidden>Set a campaign goal above to see a study here.</div>
+    <div id="studyBody" hidden>
+      <div id="studyGoalStatus"></div>
+      <h3 class="format-mix-subhead">Funnel — campaign to date</h3>
+      <div id="studyFunnel"></div>
+      <h3 class="format-mix-subhead">Findings</h3>
+      <p class="format-mix-intro">Editable before export — these are observations from the numbers above, never claims about cause.</p>
+      <div id="studyFindings"></div>
+      <h3 class="format-mix-subhead">Limits</h3>
+      <ul id="studyLimits"></ul>
+      <div class="btn-row" style="margin-top:14px;">
+        <button type="button" id="exportStudyBtn">⬇ Export study file</button>
+        <label for="importStudyInput" class="btn-primary" style="display:inline-flex; align-items:center; padding:8px 12px; border-radius:8px; cursor:pointer;">⬆ Import study file</label>
+        <input type="file" id="importStudyInput" accept=".json" style="position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0);">
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="outcomesLog">
+    <h2>Outcomes log</h2>
+    <p class="format-mix-intro">Any CDLS group can log a non-metric contribution to this campaign here — no metrics upload required.</p>
+    <form id="outcomeForm" class="field-grid">
+      <div class="field"><label for="oc_date">Date</label><input type="date" id="oc_date"></div>
+      <div class="field"><label for="oc_group">Group</label><input type="text" id="oc_group" placeholder="e.g. Consortium"></div>
+      <div class="field field-wide"><label for="oc_description">Description</label><input type="text" id="oc_description" maxlength="200"></div>
+      <div class="field"><label for="oc_evidenceLink">Evidence link (optional)</label><input type="url" id="oc_evidenceLink" placeholder="https://…"></div>
+      <div class="field" style="align-self:flex-end;"><button type="submit" class="btn-primary">Log outcome</button></div>
+    </form>
+    <div class="table-scroll" style="margin-top:14px;">
+      <table class="detail" id="outcomeTable">
+        <thead><tr><th>Date</th><th>Group</th><th>Description</th><th>Evidence</th><th></th></tr></thead>
+        <tbody id="outcomeTableBody"></tbody>
+      </table>
+    </div>
+    <div id="outcomeEmpty" class="empty-state" hidden>No outcomes logged yet.</div>
+  </section>
+
+  <h2 style="margin: 24px 0 4px; font-size:16px;">Legacy views</h2>
+  <p style="color: var(--text-secondary); font-size: 13px; margin: 0 0 12px;">The Pulse v1 dashboard, unchanged, kept below while the campaign-study flow above is verified.</p>
 
   <section class="card" id="filters">
     <h2>Filters</h2>
@@ -399,7 +590,14 @@
     clicks: ["clicks", "link_clicks", "linktree_clicks", "total_clicks", "taps"],
     conversions: ["conversions", "conversion"],
     form_submissions: ["form_submissions", "submissions", "responses", "response"],
-    new_subscribers: ["new_subscribers", "new_subscriber", "signups", "sign_ups", "new_signups"]
+    new_subscribers: ["new_subscribers", "new_subscriber", "signups", "sign_ups", "new_signups"],
+    // Campaign-specific outcome fields (Pulse v2): distinct from new_subscribers
+    // above, which only ever feeds the conversions fallback. These are their
+    // own row fields so a campaign goal can target them directly. Aliases are
+    // deliberately non-overlapping with new_subscribers' aliases so a plain
+    // "signups" column keeps its v1 meaning (a conversions fallback input).
+    interest_signups: ["interest_signups", "interest_sign_ups"],
+    applications: ["applications", "second_stage_applications", "completed_applications"]
   };
   var CANONICAL_ALIAS_TO_FIELD = buildAliasToField(CANONICAL_ALIASES);
 
@@ -409,6 +607,19 @@
     { key: "followers", label: "Followers" },
     { key: "clicks", label: "Clicks" },
     { key: "conversions", label: "Sign-ups" }
+  ];
+
+  // Row fields a campaign goal (Pulse v2) can target or use as a rate
+  // numerator/denominator. Superset of METRICS: adds the two campaign-outcome
+  // fields from buildPreAggRow (interest_signups, applications).
+  var OUTCOME_FIELD_OPTIONS = [
+    { key: "conversions", label: "Sign-ups / conversions" },
+    { key: "clicks", label: "Clicks" },
+    { key: "engagements", label: "Engagement" },
+    { key: "reach", label: "Reach" },
+    { key: "followers", label: "Followers" },
+    { key: "interest_signups", label: "Interest sign-ups" },
+    { key: "applications", label: "Completed applications" }
   ];
 
   var TEMPLATE_CSV = "week,channel,reach,impressions,engagements,followers,clicks,conversions\n" +
@@ -502,7 +713,11 @@
       engagements: toNumber(mapped.engagements),
       followers: toNumber(mapped.followers),
       clicks: toNumber(mapped.clicks),
-      conversions: conversions
+      conversions: conversions,
+      // Optional campaign-outcome fields (Pulse v2). Zero when a source file
+      // doesn't carry them - existing callers that never set them are unaffected.
+      interest_signups: toNumber(mapped.interest_signups),
+      applications: toNumber(mapped.applications)
     };
   }
 
@@ -527,7 +742,7 @@
       var week = isoWeekMondayString(d);
       var key = r.channel + "|" + week;
       if (!groups[key]) {
-        groups[key] = { week: week, channel: r.channel, reach: 0, impressions: 0, engagements: 0, followers: 0, clicks: 0, conversions: 0, _followersDate: null };
+        groups[key] = { week: week, channel: r.channel, reach: 0, impressions: 0, engagements: 0, followers: 0, clicks: 0, conversions: 0, interest_signups: 0, applications: 0, _followersDate: null };
       }
       var g = groups[key];
       g.reach += r.reach;
@@ -535,6 +750,8 @@
       g.engagements += r.engagements;
       g.clicks += r.clicks;
       g.conversions += r.conversions;
+      g.interest_signups += r.interest_signups || 0;
+      g.applications += r.applications || 0;
       if (g._followersDate === null || d.getTime() >= g._followersDate) { g.followers = r.followers; g._followersDate = d.getTime(); }
     });
     return Object.keys(groups).map(function (k) {
@@ -640,6 +857,35 @@
         conversions: ["conversions"],
         new_subscribers: ["new_subscribers", "subscribed", "signups"]
       })
+    },
+    {
+      // A CDLS-authored tracking sheet (not a raw platform export), logging
+      // per-channel weekly counts against a specific campaign's outcomes -
+      // interest sign-ups and completed applications, rather than the
+      // platform-level reach/engagement the exports above carry. channel is
+      // null (not a fixed string): unlike the single-channel platform
+      // exports, this file's channel varies row to row, like the canonical
+      // schema - see runAdapter's channel fallback above.
+      //
+      // Its own week/channel column names ("Week Ending" / "Comms Channel")
+      // are deliberately not canonical aliases (week/date/... , channel/
+      // source/...): if they were, looksCanonical() would already claim the
+      // file via the canonical path before detectAdapter ever runs, making
+      // this adapter dead code. The metric columns can and do overlap with
+      // canonical aliases - looksCanonical never looks at those - so either
+      // path maps them to the same fields.
+      id: "comms_impact_tracker",
+      label: "Comms Impact Tracker",
+      channel: null,
+      filenameHints: [/comms.?impact/i, /impact.?tracker/i],
+      signature: ["week_ending", "comms_channel", "interest_sign_ups", "completed_applications"],
+      aliasToField: buildAliasToField({
+        date: ["week_ending"],
+        channel: ["comms_channel"],
+        interest_signups: ["interest_signups", "interest_sign_ups"],
+        applications: ["applications", "completed_applications", "second_stage_applications"],
+        conversions: ["conversions"]
+      })
     }
   ];
   var ADAPTER_MATCH_THRESHOLD = 0.4;
@@ -660,7 +906,11 @@
     var out = [];
     rawRows.forEach(function (raw) {
       var mapped = mapRow(raw, adapter.aliasToField);
-      var row = buildPreAggRow(mapped, adapter.channel, mapped.date);
+      // adapter.channel is a fixed channel for a single-channel platform
+      // export; null means the file carries its own per-row channel column
+      // (the Comms Impact Tracker, below), like the canonical schema does.
+      var channel = adapter.channel || mapped.channel;
+      var row = buildPreAggRow(mapped, channel, mapped.date);
       if (row) out.push(row);
     });
     return out;
@@ -746,6 +996,354 @@
     if (/^sep=/i.test(firstLine)) text = nl === -1 ? "" : text.slice(nl + 1);
     return text;
   }
+
+  // ---------- Pulse v2: campaign goal validation ----------
+  // Pure: takes the raw form field values in, returns a field->message error
+  // map out (empty object means valid). No DOM access, no state reads.
+  function validateCampaignFields(fields) {
+    var errors = {};
+    if (!fields.name || !String(fields.name).trim()) errors.name = "Campaign name is required.";
+    if (!fields.outcomeLabel || !String(fields.outcomeLabel).trim()) errors.outcomeLabel = "Describe what the goal counts.";
+    if (!fields.outcomeField) errors.outcomeField = "Pick which uploaded field counts as the outcome.";
+    var target = Number(fields.targetCount);
+    if (!fields.targetCount || isNaN(target) || target <= 0) errors.targetCount = "Target must be a positive number.";
+    if (!fields.startDate) errors.startDate = "Start date is required.";
+    if (!fields.deadline) errors.deadline = "Deadline is required.";
+    if (fields.startDate && fields.deadline && fields.deadline <= fields.startDate) {
+      errors.deadline = "Deadline must be after the start date.";
+    }
+    if ((fields.rateNumeratorField && !fields.rateDenominatorField) || (!fields.rateNumeratorField && fields.rateDenominatorField)) {
+      errors.rateDenominatorField = "A secondary rate needs both a numerator and a denominator field.";
+    }
+    if (fields.baselinePerWeek !== null && fields.baselinePerWeek !== undefined && fields.baselinePerWeek !== "" && isNaN(Number(fields.baselinePerWeek))) {
+      errors.baselinePerWeek = "Baseline per week must be a number.";
+    }
+    return errors;
+  }
+
+  // ---------- Pulse v2: study file (schemaVersion check only - pure) ----------
+  function validateStudyFile(payload) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return { valid: false, error: "This doesn't look like a Pulse study file." };
+    }
+    if (payload.schemaVersion !== 1) {
+      return { valid: false, error: "This study file is schema version " + JSON.stringify(payload.schemaVersion) + ", which this version of Pulse doesn't understand (expected version 1)." };
+    }
+    return { valid: true, error: null };
+  }
+
+  // ---------- Pulse v2: study engine (section 6 of the architecture brief) ----------
+  // Pure: takes rows/actions/campaign data in, returns plain data out. Never
+  // writes causal wording ("caused", "because of", "led to") - only timing
+  // or size lining up ("lines up with", "in the same week as", "accounted
+  // for X% of"). Never states a percentage when the baseline is under 5.
+
+  function computeFunnelForWeek(rows, week, channels) {
+    var reach = sumMetric(rows, week, channels, "reach");
+    var engagements = sumMetric(rows, week, channels, "engagements");
+    var clicks = sumMetric(rows, week, channels, "clicks");
+    var conversions = sumMetric(rows, week, channels, "conversions");
+    return {
+      reach: reach, engagements: engagements, clicks: clicks, conversions: conversions,
+      ctr: reach > 0 ? clicks / reach : null,
+      convRate: clicks > 0 ? conversions / clicks : null
+    };
+  }
+
+  // Assigns each action to the ISO week it falls in (same boundaries as
+  // aggregateToWeek/isoWeekMondayString). Returns a plain object, week -> actions[].
+  function bucketActionsByWeek(actions, weekStartFn) {
+    var map = {};
+    actions.forEach(function (a) {
+      var d = parseAnyDate(a.date);
+      if (!d) return;
+      var week = weekStartFn(d);
+      if (!map[week]) map[week] = [];
+      map[week].push(a);
+    });
+    return map;
+  }
+
+  function classifyWeek(actionsInWeek) {
+    if (!actionsInWeek || !actionsInWeek.length) return "none";
+    var types = new Set(actionsInWeek.map(function (a) { return a.type; }));
+    return types.size >= 2 ? "stacked" : "clean";
+  }
+
+  // Sums campaign.outcomeField by week, within the campaign's date range.
+  // Returns an array of { week, value }, sorted ascending by week.
+  function outcomeSeries(rows, campaign) {
+    var byWeek = {};
+    rows.forEach(function (r) {
+      if (campaign.startDate && r.week < campaign.startDate) return;
+      if (campaign.deadline && r.week > campaign.deadline) return;
+      byWeek[r.week] = (byWeek[r.week] || 0) + toNumber(r[campaign.outcomeField]);
+    });
+    return Object.keys(byWeek).sort().map(function (week) { return { week: week, value: byWeek[week] }; });
+  }
+
+  // A week counts as "full" (complete) once its last day is before `today` -
+  // the current in-progress week never counts toward a pace average.
+  function isFullWeek(weekStr, today) {
+    var weekStart = parseAnyDate(weekStr);
+    var todayDate = parseAnyDate(today);
+    if (!weekStart || !todayDate) return false;
+    var weekEnd = new Date(weekStart.getTime() + 6 * 86400000);
+    return weekEnd.getTime() < todayDate.getTime();
+  }
+
+  function progressToGoal(series, campaign, today) {
+    var current = series.reduce(function (s, r) { return s + r.value; }, 0);
+    var target = campaign.targetCount;
+    var remaining = Math.max(target - current, 0);
+
+    var deadlineDate = parseAnyDate(campaign.deadline);
+    var todayDate = parseAnyDate(today);
+    var weeksLeft = (deadlineDate && todayDate)
+      ? Math.max(0, Math.ceil((deadlineDate.getTime() - todayDate.getTime()) / (7 * 86400000)))
+      : 0;
+    var paceNeededPerWeek = weeksLeft > 0 ? remaining / weeksLeft : null;
+
+    var fullWeeks = series.filter(function (r) { return isFullWeek(r.week, today); });
+    var lastTwoFull = fullWeeks.slice(-2);
+    var recentPacePerWeek = lastTwoFull.length >= 2
+      ? lastTwoFull.reduce(function (s, r) { return s + r.value; }, 0) / lastTwoFull.length
+      : null;
+
+    var status;
+    if (current >= target) {
+      status = "reached";
+    } else if (recentPacePerWeek === null) {
+      status = "insufficient_data";
+    } else if (paceNeededPerWeek === null || recentPacePerWeek >= paceNeededPerWeek) {
+      status = "on_pace";
+    } else {
+      status = "behind";
+    }
+
+    return {
+      current: current, target: target, remaining: remaining, weeksLeft: weeksLeft,
+      paceNeededPerWeek: paceNeededPerWeek, recentPacePerWeek: recentPacePerWeek, status: status
+    };
+  }
+
+  // Baseline is the mean of the two weeks in `series` immediately before
+  // `week`. Falls back to campaign.baselinePerWeek if fewer than two prior
+  // weeks exist; returns { lift: null, reason: "no_baseline" } if neither.
+  // percent is only ever set when the baseline is at least 5 (small-count
+  // percentages are misleading, so buildFindings must never print one below
+  // that floor).
+  function liftForWeek(series, week, campaign) {
+    var byWeek = {};
+    series.forEach(function (r) { byWeek[r.week] = r.value; });
+    var weeks = series.map(function (r) { return r.week; }).sort();
+    var idx = weeks.indexOf(week);
+    var priorWeeks = idx > 0 ? weeks.slice(Math.max(0, idx - 2), idx) : [];
+
+    var baseline;
+    if (priorWeeks.length >= 2) {
+      baseline = priorWeeks.reduce(function (s, w) { return s + byWeek[w]; }, 0) / priorWeeks.length;
+    } else if (campaign.baselinePerWeek !== null && campaign.baselinePerWeek !== undefined) {
+      baseline = campaign.baselinePerWeek;
+    } else {
+      return { lift: null, reason: "no_baseline" };
+    }
+
+    var current = byWeek[week] || 0;
+    var difference = current - baseline;
+    var percent = baseline >= 5 ? (difference / baseline) * 100 : null;
+    return { lift: { difference: difference, percent: percent }, baseline: baseline, reason: null };
+  }
+
+  // Response window length in weeks, tunable from real VSTEM data (open
+  // question in the architecture brief section 13) without touching the
+  // functions that use it.
+  var RESPONSE_WEEKS = 2;
+
+  // The action's own week plus the following week(s), per RESPONSE_WEEKS.
+  function responseWindow(week) {
+    var start = parseAnyDate(week);
+    var weeks = [];
+    for (var i = 0; i < RESPONSE_WEEKS; i++) {
+      weeks.push(isoWeekMondayString(new Date(start.getTime() + i * 7 * 86400000)));
+    }
+    return weeks;
+  }
+
+  // If the action's channel exists in the uploaded rows, returns that
+  // channel's outcomeField total for the response window beside the total
+  // across all channels for the same window. Otherwise { matched: false }.
+  // Deviation from the brief's literal signature: campaign is added as a
+  // parameter because the function otherwise has no way to know which row
+  // field is "outcomes" - see the architecture brief section 6.
+  function channelMatch(action, rows, week, campaign) {
+    var window = responseWindow(week);
+    var inWindow = rows.filter(function (r) { return window.indexOf(r.week) !== -1; });
+    var channelRows = inWindow.filter(function (r) { return r.channel === action.channel; });
+    if (!action.channel || !channelRows.length) return { matched: false };
+    var channelOutcomes = channelRows.reduce(function (s, r) { return s + toNumber(r[campaign.outcomeField]); }, 0);
+    var totalOutcomes = inWindow.reduce(function (s, r) { return s + toNumber(r[campaign.outcomeField]); }, 0);
+    return { matched: true, channelOutcomes: channelOutcomes, totalOutcomes: totalOutcomes, window: window };
+  }
+
+  // Outcomes in a week with a logged action but no channel a row can be
+  // tagged to are unattributed - never credited to any one action. Same
+  // signature deviation as channelMatch, for the same reason.
+  function unattributed(rows, week, actions, campaign) {
+    var actionChannels = new Set(
+      actions.filter(function (a) {
+        var d = parseAnyDate(a.date);
+        return d && isoWeekMondayString(d) === week;
+      }).map(function (a) { return a.channel; }).filter(Boolean)
+    );
+    return rows.filter(function (r) { return r.week === week && !actionChannels.has(r.channel); })
+      .reduce(function (s, r) { return s + toNumber(r[campaign.outcomeField]); }, 0);
+  }
+
+  // Delegates to computeFunnelForWeek and sums stage counts across every
+  // week in the campaign's date range; returns stage-to-stage conversion.
+  function funnelByStage(rows, campaign) {
+    var weeks = Array.from(new Set(rows.map(function (r) { return r.week; })))
+      .filter(function (w) {
+        return (!campaign.startDate || w >= campaign.startDate) && (!campaign.deadline || w <= campaign.deadline);
+      })
+      .sort();
+    var channels = new Set(rows.map(function (r) { return r.channel; }));
+    var totals = { reach: 0, engagements: 0, clicks: 0, conversions: 0 };
+    weeks.forEach(function (w) {
+      var f = computeFunnelForWeek(rows, w, channels);
+      totals.reach += f.reach; totals.engagements += f.engagements; totals.clicks += f.clicks; totals.conversions += f.conversions;
+    });
+    return {
+      reach: totals.reach, engagements: totals.engagements, clicks: totals.clicks, conversions: totals.conversions,
+      reachToEngagement: totals.reach > 0 ? totals.engagements / totals.reach : null,
+      engagementToClicks: totals.engagements > 0 ? totals.clicks / totals.engagements : null,
+      clicksToConversions: totals.clicks > 0 ? totals.conversions / totals.clicks : null
+    };
+  }
+
+  // Builds the study's findings and limits from context = { rows, actions,
+  // campaign, today }. Returns { findings, limits }, matching state.study's
+  // two separate keys. Deviation from the brief's literal "return an array
+  // of findings... always end with a limits list": limits are returned as
+  // their own array rather than appended into the findings array, since
+  // state.study already models them as separate slices (architecture brief
+  // section 4) and mixing them back into one array would just require
+  // splitting them apart again on render.
+  function buildFindings(context) {
+    var rows = context.rows, actions = context.actions, campaign = context.campaign, today = context.today;
+    var findings = [];
+    var limits = [];
+    if (!campaign) return { findings: findings, limits: limits };
+
+    var series = outcomeSeries(rows, campaign);
+    var progress = progressToGoal(series, campaign, today);
+    var seriesByWeek = {};
+    series.forEach(function (r) { seriesByWeek[r.week] = r.value; });
+
+    // Observed: current progress toward the goal.
+    findings.push({
+      type: "observed",
+      text: campaign.outcomeLabel + ": " + fmt(progress.current) + " of " + fmt(progress.target) + " (" + progress.status.replace(/_/g, " ") + ").",
+      evidence: "progressToGoal"
+    });
+
+    var campaignActions = actions.filter(function (a) { return a.campaignId === campaign.id; });
+    var byWeek = bucketActionsByWeek(campaignActions, isoWeekMondayString);
+    var weeksWithOutcomeData = series.map(function (r) { return r.week; });
+    var weeksWithActions = Object.keys(byWeek);
+    var allWeeks = Array.from(new Set(weeksWithOutcomeData.concat(weeksWithActions))).sort();
+
+    allWeeks.forEach(function (week) {
+      var actionsInWeek = byWeek[week] || [];
+      var cls = classifyWeek(actionsInWeek);
+      if (cls === "none") return;
+
+      if (cls === "stacked") {
+        var names = actionsInWeek.map(function (a) { return a.type; }).join(", ");
+        findings.push({
+          type: "not_testable",
+          week: week,
+          text: "Week of " + week + " had more than one kind of action (" + names + "), so no single one can be tied to that week's numbers.",
+          evidence: "classifyWeek"
+        });
+        return;
+      }
+
+      // cls === "clean": exactly one action type this week.
+      var action = actionsInWeek[0];
+      if (!(week in seriesByWeek)) {
+        findings.push({
+          type: "not_testable",
+          week: week,
+          text: "Week of " + week + " logged a " + action.type + " action, but no outcome data is loaded for that week.",
+          evidence: "outcomeSeries"
+        });
+        return;
+      }
+      var current = seriesByWeek[week];
+      if (current < 5) {
+        findings.push({
+          type: "not_testable",
+          week: week,
+          text: "Week of " + week + "'s count (" + fmt(current) + ") is too small to read anything into on its own.",
+          evidence: "outcomeSeries"
+        });
+        return;
+      }
+      var lift = liftForWeek(series, week, campaign);
+      if (lift.lift === null) {
+        findings.push({
+          type: "not_testable",
+          week: week,
+          text: "Week of " + week + " has no baseline (fewer than two prior weeks and no baseline set), so a " + action.type + " action's effect can't be read.",
+          evidence: "liftForWeek"
+        });
+        return;
+      }
+      var direction = lift.lift.difference > 0 ? "up" : (lift.lift.difference < 0 ? "down" : "flat versus");
+      var sizeText = lift.lift.percent !== null
+        ? Math.abs(lift.lift.percent).toFixed(0) + "%"
+        : Math.abs(Math.round(lift.lift.difference)) + " (count)";
+      var match = channelMatch(action, rows, week, campaign);
+      var matchText = match.matched
+        ? (" " + action.channel + " accounted for " + Math.round(match.channelOutcomes) + " of " + Math.round(match.totalOutcomes) + " in that window.")
+        : "";
+      findings.push({
+        type: "associated",
+        week: week,
+        text: "Week of " + week + "'s " + campaign.outcomeLabel.toLowerCase() + " count was " + direction + " " + sizeText +
+          " versus baseline, in the same week as a " + action.type + " action." + matchText,
+        evidence: "liftForWeek + channelMatch"
+      });
+    });
+
+    // Limits.
+    var channelsInRows = new Set(rows.map(function (r) { return r.channel; }));
+    var actionChannelsMissing = Array.from(new Set(
+      campaignActions.filter(function (a) { return a.channel && !channelsInRows.has(a.channel); }).map(function (a) { return a.channel; })
+    ));
+    if (actionChannelsMissing.length) {
+      limits.push("No uploaded metrics for channel(s): " + actionChannelsMissing.join(", ") + ".");
+    }
+    var wordOfMouthCount = campaignActions.filter(function (a) { return a.type === "word_of_mouth"; }).length;
+    if (wordOfMouthCount) {
+      limits.push(wordOfMouthCount + " word-of-mouth action(s) logged with no metrics trail.");
+    }
+    if (!campaign.baselinePerWeek && series.length < 2) {
+      limits.push("No pre-launch baseline set and fewer than two weeks of outcome data - most weeks can't be compared.");
+    }
+    var untaggedTotal = allWeeks.reduce(function (sum, week) {
+      return sum + unattributed(rows, week, campaignActions, campaign);
+    }, 0);
+    if (untaggedTotal > 0) {
+      limits.push(fmt(Math.round(untaggedTotal)) + " " + campaign.outcomeLabel.toLowerCase() + " across the campaign came from channels with no logged action that week (untagged sources).");
+    }
+    limits.push("These are observations, not explanations of why numbers moved - counts are too small here for causal inference.");
+
+    findings.forEach(function (f, i) { f.id = f.type + ":" + (f.week || "overall") + ":" + i; });
+    return { findings: findings, limits: limits };
+  }
   // CDLS-ENGINE:END
 
   // ---------- Palette ----------
@@ -764,7 +1362,15 @@
     metric: "reach",
     formatMix: [], // { period (ISO week-Monday), format, published, views, interactions }
     formatColor: {},
-    formatMixPeriod: null
+    formatMixPeriod: null,
+    // Pulse v2: campaign effectiveness. campaign is null until setCampaign()
+    // is called; actions/outcomes are logged separately (never written into
+    // state.rows - see the architecture brief section 4). study is derived,
+    // rebuilt by renderStudy(), never edited directly.
+    campaign: null,
+    actions: [],
+    outcomes: [],
+    study: { findings: [], goalStatus: {}, limits: [], findingsEdited: {} }
   };
   var chartInstance = null;
 
@@ -807,12 +1413,48 @@
     }
   }
 
+  // ---------- Pulse v2: campaign, actions, outcomes (state mutation) ----------
+  // Each helper below is the only way the rest of the app changes these
+  // three state slices, and each calls renderAll() exactly once, so a
+  // caller never has to remember to re-render after a write.
+  function setCampaign(fields) {
+    state.campaign = fields;
+    renderAll();
+  }
+
+  function makeId(prefix) {
+    return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function addAction(action) {
+    state.actions.push(Object.assign({ id: makeId("a") }, action));
+    renderAll();
+  }
+  function removeAction(id) {
+    state.actions = state.actions.filter(function (a) { return a.id !== id; });
+    renderAll();
+  }
+
+  function addOutcome(outcome) {
+    state.outcomes.push(Object.assign({ id: makeId("o") }, outcome));
+    renderAll();
+  }
+  function removeOutcome(id) {
+    state.outcomes = state.outcomes.filter(function (o) { return o.id !== id; });
+    renderAll();
+  }
+
   // ---------- Rendering ----------
   function safeRender(fn) {
     try { fn(); } catch (e) { console.error(e); }
   }
 
   function renderAll() {
+    safeRender(renderCampaignGoal);
+    safeRender(renderActionLog);
+    safeRender(renderIngestRangeCount);
+    safeRender(renderStudy);
+    safeRender(renderOutcomesLog);
     safeRender(renderWeekSelect);
     safeRender(renderChips);
     safeRender(renderKPIs);
@@ -821,6 +1463,278 @@
     safeRender(renderFunnel);
     safeRender(renderTable);
     safeRender(renderFormatMix);
+  }
+
+  // ---------- Pulse v2: campaign goal form ----------
+  function populateOutcomeFieldSelect(sel, includeNone) {
+    var current = sel.value;
+    sel.innerHTML = "";
+    if (includeNone) {
+      var noneOpt = document.createElement("option");
+      noneOpt.value = "";
+      noneOpt.textContent = "— none —";
+      sel.appendChild(noneOpt);
+    }
+    OUTCOME_FIELD_OPTIONS.forEach(function (f) {
+      var opt = document.createElement("option");
+      opt.value = f.key;
+      opt.textContent = f.label;
+      sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
+  }
+
+  function renderCampaignGoal() {
+    populateOutcomeFieldSelect(document.getElementById("cg_outcomeField"), false);
+    populateOutcomeFieldSelect(document.getElementById("cg_rateNumeratorField"), true);
+    populateOutcomeFieldSelect(document.getElementById("cg_rateDenominatorField"), true);
+
+    var summary = document.getElementById("campaignSummary");
+    var form = document.getElementById("campaignForm");
+    var c = state.campaign;
+    if (!c) {
+      summary.hidden = true;
+      form.hidden = false;
+      return;
+    }
+    summary.hidden = false;
+    form.hidden = true;
+    var outcomeLabel = (OUTCOME_FIELD_OPTIONS.filter(function (f) { return f.key === c.outcomeField; })[0] || {}).label || c.outcomeField;
+    var rateBit = c.rateNumeratorField && c.rateDenominatorField
+      ? '<div class="item"><div class="label">Secondary rate</div><div class="value">' +
+        (OUTCOME_FIELD_OPTIONS.filter(function (f) { return f.key === c.rateNumeratorField; })[0] || {}).label + " / " +
+        (OUTCOME_FIELD_OPTIONS.filter(function (f) { return f.key === c.rateDenominatorField; })[0] || {}).label + '</div></div>'
+      : "";
+    summary.innerHTML =
+      '<div class="campaign-summary-row">' +
+      '<div class="item"><div class="label">Campaign</div><div class="value">' + c.name + '</div></div>' +
+      '<div class="item"><div class="label">Goal</div><div class="value">' + c.outcomeLabel + ' — target ' + fmt(c.targetCount) + '</div></div>' +
+      '<div class="item"><div class="label">Tracking</div><div class="value">' + outcomeLabel + '</div></div>' +
+      '<div class="item"><div class="label">Window</div><div class="value">' + c.startDate + ' → ' + c.deadline + '</div></div>' +
+      rateBit +
+      '</div>' +
+      '<button type="button" id="editCampaignBtn">Edit campaign goal</button>';
+    document.getElementById("editCampaignBtn").addEventListener("click", function () {
+      form.hidden = false;
+      summary.hidden = true;
+      document.getElementById("cg_name").value = c.name || "";
+      document.getElementById("cg_audience").value = c.audience || "mentee";
+      document.getElementById("cg_outcomeLabel").value = c.outcomeLabel || "";
+      document.getElementById("cg_outcomeField").value = c.outcomeField || "";
+      document.getElementById("cg_targetCount").value = c.targetCount || "";
+      document.getElementById("cg_startDate").value = c.startDate || "";
+      document.getElementById("cg_deadline").value = c.deadline || "";
+      document.getElementById("cg_baselinePerWeek").value = c.baselinePerWeek == null ? "" : c.baselinePerWeek;
+      document.getElementById("cg_owner").value = c.owner || "";
+      document.getElementById("cg_group").value = c.group || "";
+      document.getElementById("cg_rateNumeratorField").value = c.rateNumeratorField || "";
+      document.getElementById("cg_rateDenominatorField").value = c.rateDenominatorField || "";
+    });
+  }
+
+  document.getElementById("campaignForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var fields = {
+      id: (state.campaign && state.campaign.id) || makeId("c"),
+      name: document.getElementById("cg_name").value.trim(),
+      audience: document.getElementById("cg_audience").value,
+      outcomeLabel: document.getElementById("cg_outcomeLabel").value.trim(),
+      outcomeField: document.getElementById("cg_outcomeField").value,
+      targetCount: Number(document.getElementById("cg_targetCount").value),
+      rateNumeratorField: document.getElementById("cg_rateNumeratorField").value || null,
+      rateDenominatorField: document.getElementById("cg_rateDenominatorField").value || null,
+      startDate: document.getElementById("cg_startDate").value,
+      deadline: document.getElementById("cg_deadline").value,
+      baselinePerWeek: document.getElementById("cg_baselinePerWeek").value === "" ? null : Number(document.getElementById("cg_baselinePerWeek").value),
+      owner: document.getElementById("cg_owner").value.trim(),
+      group: document.getElementById("cg_group").value.trim()
+    };
+    var errors = validateCampaignFields(fields);
+    var errorBox = document.getElementById("campaignFormErrors");
+    if (Object.keys(errors).length) {
+      errorBox.hidden = false;
+      errorBox.textContent = Object.keys(errors).map(function (k) { return errors[k]; }).join(" ");
+      return;
+    }
+    errorBox.hidden = true;
+    setCampaign(fields);
+  });
+
+  // ---------- Pulse v2: action log ----------
+  function renderActionLog() {
+    var datalist = document.getElementById("ac_channelOptions");
+    datalist.innerHTML = "";
+    state.channels.forEach(function (ch) {
+      var opt = document.createElement("option");
+      opt.value = ch;
+      datalist.appendChild(opt);
+    });
+
+    var body = document.getElementById("actionTableBody");
+    var empty = document.getElementById("actionEmpty");
+    body.innerHTML = "";
+    var campaignId = state.campaign && state.campaign.id;
+    var actions = state.actions.filter(function (a) { return !campaignId || a.campaignId === campaignId; })
+      .slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    if (!actions.length) {
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+    actions.forEach(function (a) {
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>" + a.date + "</td><td>" + a.type + "</td><td>" + (a.channel || "—") + "</td><td>" + a.audience + "</td><td>" + (a.note || "") + "</td><td></td>";
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.textContent = "Remove";
+      delBtn.addEventListener("click", function () { removeAction(a.id); });
+      tr.lastElementChild.appendChild(delBtn);
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById("actionForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var dateEl = document.getElementById("ac_date");
+    addAction({
+      campaignId: state.campaign && state.campaign.id,
+      date: dateEl.value || new Date().toISOString().slice(0, 10),
+      type: document.getElementById("ac_type").value,
+      channel: document.getElementById("ac_channel").value.trim(),
+      audience: document.getElementById("ac_audience").value,
+      note: document.getElementById("ac_note").value.trim()
+    });
+    e.target.reset();
+    dateEl.value = new Date().toISOString().slice(0, 10);
+  });
+
+  // ---------- Pulse v2: outcomes log ----------
+  function renderOutcomesLog() {
+    var body = document.getElementById("outcomeTableBody");
+    var empty = document.getElementById("outcomeEmpty");
+    body.innerHTML = "";
+    if (!state.outcomes.length) {
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+    state.outcomes.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).forEach(function (o) {
+      var tr = document.createElement("tr");
+      var evidence = o.evidenceLink ? '<a href="' + o.evidenceLink + '" target="_blank" rel="noopener">link</a>' : "—";
+      tr.innerHTML = "<td>" + o.date + "</td><td>" + o.group + "</td><td>" + o.description + "</td><td>" + evidence + "</td><td></td>";
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.textContent = "Remove";
+      delBtn.addEventListener("click", function () { removeOutcome(o.id); });
+      tr.lastElementChild.appendChild(delBtn);
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById("outcomeForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    addOutcome({
+      campaignId: state.campaign && state.campaign.id,
+      date: document.getElementById("oc_date").value || new Date().toISOString().slice(0, 10),
+      group: document.getElementById("oc_group").value.trim(),
+      description: document.getElementById("oc_description").value.trim(),
+      evidenceLink: document.getElementById("oc_evidenceLink").value.trim() || null
+    });
+    e.target.reset();
+  });
+
+  // ---------- Pulse v2: study (goal status, funnel, findings, limits) ----------
+  var GOAL_STATUS_LABELS = {
+    reached: "Goal reached", on_pace: "On pace", behind: "Behind pace", insufficient_data: "Not enough data yet"
+  };
+
+  function renderStudy() {
+    var empty = document.getElementById("studyEmpty");
+    var body = document.getElementById("studyBody");
+    var campaign = state.campaign;
+    if (!campaign) {
+      empty.hidden = false;
+      body.hidden = true;
+      return;
+    }
+    empty.hidden = true;
+    body.hidden = false;
+
+    var today = new Date().toISOString().slice(0, 10);
+    var series = outcomeSeries(state.rows, campaign);
+    var progress = progressToGoal(series, campaign, today);
+    var funnel = funnelByStage(state.rows, campaign);
+    var result = buildFindings({ rows: state.rows, actions: state.actions, campaign: campaign, today: today });
+    state.study.goalStatus = progress;
+    state.study.findings = result.findings;
+    state.study.limits = result.limits;
+
+    var statusEl = document.getElementById("studyGoalStatus");
+    statusEl.innerHTML =
+      '<span class="goal-status-badge ' + progress.status + '">' + (GOAL_STATUS_LABELS[progress.status] || progress.status) + '</span>' +
+      '<div class="campaign-summary-row">' +
+      '<div class="item"><div class="label">Current</div><div class="value">' + fmt(progress.current) + ' of ' + fmt(progress.target) + '</div></div>' +
+      '<div class="item"><div class="label">Remaining</div><div class="value">' + fmt(progress.remaining) + '</div></div>' +
+      '<div class="item"><div class="label">Weeks left</div><div class="value">' + progress.weeksLeft + '</div></div>' +
+      '<div class="item"><div class="label">Pace needed / wk</div><div class="value">' + (progress.paceNeededPerWeek !== null ? progress.paceNeededPerWeek.toFixed(1) : "—") + '</div></div>' +
+      '<div class="item"><div class="label">Recent pace / wk</div><div class="value">' + (progress.recentPacePerWeek !== null ? progress.recentPacePerWeek.toFixed(1) : "—") + '</div></div>' +
+      '</div>';
+
+    var funnelEl = document.getElementById("studyFunnel");
+    funnelEl.innerHTML = "";
+    var stages = [
+      { name: "Reach", value: funnel.reach, colorVar: "--seq-300" },
+      { name: "Engagement", value: funnel.engagements, colorVar: "--seq-400" },
+      { name: "Clicks", value: funnel.clicks, colorVar: "--seq-500" },
+      { name: "Sign-ups", value: funnel.conversions, colorVar: "--seq-600" }
+    ];
+    stages.forEach(function (s) {
+      var pct = funnel.reach > 0 ? (s.value / funnel.reach) * 100 : 0;
+      var row = document.createElement("div");
+      row.className = "funnel-stage";
+      row.innerHTML =
+        '<div class="stage-head"><span class="name">' + s.name + '</span>' +
+        '<span class="value">' + fmt(s.value) + (funnel.reach > 0 ? " · " + pct.toFixed(1) + "% of reach" : "") + '</span></div>' +
+        '<div class="funnel-track"><div class="funnel-fill" style="width:' + Math.min(100, Math.max(pct, s.value > 0 ? 1 : 0)) + '%; background: var(' + s.colorVar + ')"></div></div>';
+      funnelEl.appendChild(row);
+    });
+
+    var findingsEl = document.getElementById("studyFindings");
+    findingsEl.innerHTML = "";
+    if (!result.findings.length) {
+      findingsEl.innerHTML = '<div class="empty-state">No findings yet — upload metrics and log actions for this campaign to see findings here.</div>';
+    }
+    result.findings.forEach(function (f) {
+      var row = document.createElement("div");
+      row.className = "finding-row";
+      var typeLabel = f.type === "observed" ? "Observed" : f.type === "associated" ? "Associated" : "Not testable";
+      row.innerHTML = '<div class="finding-type">' + typeLabel + (f.week ? " · week of " + f.week : "") + '</div>';
+      var textarea = document.createElement("textarea");
+      textarea.value = state.study.findingsEdited[f.id] != null ? state.study.findingsEdited[f.id] : f.text;
+      textarea.addEventListener("change", function () { state.study.findingsEdited[f.id] = textarea.value; });
+      row.appendChild(textarea);
+      var evidence = document.createElement("div");
+      evidence.className = "finding-evidence";
+      evidence.textContent = "Evidence: " + f.evidence;
+      row.appendChild(evidence);
+      findingsEl.appendChild(row);
+    });
+
+    var limitsEl = document.getElementById("studyLimits");
+    limitsEl.innerHTML = "";
+    result.limits.forEach(function (l) {
+      var li = document.createElement("li");
+      li.textContent = l;
+      limitsEl.appendChild(li);
+    });
+  }
+
+  function renderIngestRangeCount() {
+    var el = document.getElementById("ingestRangeCount");
+    var c = state.campaign;
+    if (!c) { el.textContent = ""; return; }
+    var inRange = state.rows.filter(function (r) { return r.week >= c.startDate && r.week <= c.deadline; });
+    el.textContent = inRange.length + " row" + (inRange.length === 1 ? "" : "s") + " loaded within the campaign window (" + c.startDate + " → " + c.deadline + ").";
   }
 
   function renderWeekSelect() {
@@ -1195,20 +2109,8 @@
   var INTERP_NOTABLE_MOVE_PCT = 25; // WoW %% change on a channel's reach worth calling out
   var INTERP_MAX_NOTABLE_MOVERS = 2; // cap how many flagged channels make it into the sentence
 
-  function computeFunnelForWeek(week, channels) {
-    var reach = sumMetric(state.rows, week, channels, "reach");
-    var engagements = sumMetric(state.rows, week, channels, "engagements");
-    var clicks = sumMetric(state.rows, week, channels, "clicks");
-    var conversions = sumMetric(state.rows, week, channels, "conversions");
-    return {
-      reach: reach, engagements: engagements, clicks: clicks, conversions: conversions,
-      ctr: reach > 0 ? clicks / reach : null,
-      convRate: clicks > 0 ? conversions / clicks : null
-    };
-  }
-
   function trailingAverage(weeks, channels, pick) {
-    var vals = weeks.map(function (w) { return pick(computeFunnelForWeek(w, channels)); }).filter(function (v) { return v !== null; });
+    var vals = weeks.map(function (w) { return pick(computeFunnelForWeek(state.rows, w, channels)); }).filter(function (v) { return v !== null; });
     if (!vals.length) return null;
     return vals.reduce(function (a, b) { return a + b; }, 0) / vals.length;
   }
@@ -1245,7 +2147,7 @@
     // Funnel bottleneck: compare each stage to the ONE BEFORE it (not to reach),
     // so the bottleneck is the weakest conditional step, not always "engagement"
     // just because everything looks small next to reach.
-    var f = computeFunnelForWeek(week, channelSet);
+    var f = computeFunnelForWeek(state.rows, week, channelSet);
     if (f.reach > 0) {
       var transitions = [
         { name: "Engagement", rate: f.reach > 0 ? f.engagements / f.reach : null },
@@ -1394,7 +2296,7 @@
 
     // Funnel
     heading("Funnel - Reach -> Engagement -> Clicks -> Sign-ups", 13);
-    var f = computeFunnelForWeek(week, channelSet);
+    var f = computeFunnelForWeek(state.rows, week, channelSet);
     var stages = [
       { name: "Reach", value: f.reach, pct: 100 },
       { name: "Engagement", value: f.engagements, pct: f.reach > 0 ? (f.engagements / f.reach) * 100 : 0 },
@@ -1485,6 +2387,61 @@
     bodyText("Plain-language read of the numbers above, generated locally by simple rules — not a causal analysis.", 9, [120, 120, 120]);
     y += 4;
     buildInterpretation(week, channelSet).forEach(function (para) { bodyText(para, 10.5); y += 4; });
+
+    // Study — calls the same engine functions renderStudy() does, so the
+    // PDF matches the on-screen study exactly (acceptance criteria).
+    if (state.campaign) {
+      doc.addPage(); y = margin;
+      var campaign = state.campaign;
+      var today = new Date().toISOString().slice(0, 10);
+      var series = outcomeSeries(state.rows, campaign);
+      var progress = progressToGoal(series, campaign, today);
+      var funnel = funnelByStage(state.rows, campaign);
+      var studyResult = buildFindings({ rows: state.rows, actions: state.actions, campaign: campaign, today: today });
+
+      heading("Study — " + campaign.name, 16);
+      bodyText(campaign.outcomeLabel + " · " + campaign.startDate + " to " + campaign.deadline, 10, [90, 90, 90]);
+      y += 6;
+
+      heading("Goal status", 13);
+      bodyText((GOAL_STATUS_LABELS[progress.status] || progress.status) + " — " + fmt(progress.current) + " of " + fmt(progress.target) +
+        " (" + fmt(progress.remaining) + " remaining, " + progress.weeksLeft + " week(s) left)", 10.5);
+      if (progress.recentPacePerWeek !== null) {
+        bodyText("Recent pace: " + progress.recentPacePerWeek.toFixed(1) + " / week" +
+          (progress.paceNeededPerWeek !== null ? " · pace needed: " + progress.paceNeededPerWeek.toFixed(1) + " / week" : ""), 9.5, [110, 110, 110]);
+      }
+      y += 6;
+
+      heading("Funnel — campaign to date", 13);
+      [
+        { name: "Reach", value: funnel.reach },
+        { name: "Engagement", value: funnel.engagements },
+        { name: "Clicks", value: funnel.clicks },
+        { name: "Sign-ups", value: funnel.conversions }
+      ].forEach(function (s) {
+        var pct = funnel.reach > 0 ? (s.value / funnel.reach) * 100 : 0;
+        ensureSpace(14);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(30, 30, 30);
+        doc.text(s.name + ": " + fmt(s.value) + (funnel.reach > 0 ? " (" + pct.toFixed(1) + "% of reach)" : ""), margin, y);
+        y += 15;
+      });
+      y += 6;
+
+      heading("Findings", 13);
+      if (!studyResult.findings.length) {
+        bodyText("No findings yet — upload metrics and log actions for this campaign to see findings here.", 10);
+      }
+      studyResult.findings.forEach(function (f) {
+        var typeLabel = f.type === "observed" ? "Observed" : f.type === "associated" ? "Associated" : "Not testable";
+        var text = state.study.findingsEdited[f.id] != null ? state.study.findingsEdited[f.id] : f.text;
+        bodyText(pdfSafeText(typeLabel + (f.week ? " (week of " + f.week + ")" : "") + ": " + text), 10.5);
+        y += 3;
+      });
+      y += 6;
+
+      heading("Limits", 13);
+      studyResult.limits.forEach(function (l) { bodyText(pdfSafeText("• " + l), 10); });
+    }
 
     // Footer on every page
     var pageCount = doc.internal.getNumberOfPages();
@@ -1642,7 +2599,9 @@
         { key: "engagements", label: "Engagement", aliases: CANONICAL_ALIASES.engagements },
         { key: "followers", label: "Followers", aliases: CANONICAL_ALIASES.followers },
         { key: "clicks", label: "Clicks", aliases: CANONICAL_ALIASES.clicks },
-        { key: "conversions", label: "Sign-ups / conversions", aliases: CANONICAL_ALIASES.conversions }
+        { key: "conversions", label: "Sign-ups / conversions", aliases: CANONICAL_ALIASES.conversions },
+        { key: "interest_signups", label: "Interest sign-ups (campaign rate denominator)", aliases: CANONICAL_ALIASES.interest_signups },
+        { key: "applications", label: "Completed applications (campaign outcome)", aliases: CANONICAL_ALIASES.applications }
       ];
       var metricSelects = {};
       metricFieldDefs.forEach(function (f) {
@@ -1847,6 +2806,50 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
+  // ---------- Pulse v2: study file (persistence without storage) ----------
+  // weeklyRows are the aggregated canonical rows only (state.rows) - never
+  // the raw uploads, and never anything but the counts already in memory,
+  // so a study file carries no personal data by the same construction as
+  // the rest of the tool.
+  function exportStudy() {
+    var payload = {
+      schemaVersion: 1,
+      campaign: state.campaign,
+      actions: state.actions,
+      outcomes: state.outcomes,
+      weeklyRows: state.rows,
+      findingsEdited: state.study.findingsEdited
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    var slug = (state.campaign && state.campaign.name ? state.campaign.name : "study").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    a.download = "pulse-study-" + (slug || "untitled") + "-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  // Restores state through the same shape the mutation helpers write
+  // (state.campaign, state.actions, state.outcomes), then calls loadRows()
+  // once at the end - which itself calls renderAll() - so importing a
+  // study file renders exactly once, not once per restored field.
+  function importStudy(payload) {
+    var check = validateStudyFile(payload);
+    if (!check.valid) {
+      alert(check.error);
+      return false;
+    }
+    state.campaign = payload.campaign || null;
+    state.actions = Array.isArray(payload.actions) ? payload.actions : [];
+    state.outcomes = Array.isArray(payload.outcomes) ? payload.outcomes : [];
+    state.study.findingsEdited = (payload.findingsEdited && typeof payload.findingsEdited === "object") ? payload.findingsEdited : {};
+    loadRows(Array.isArray(payload.weeklyRows) ? payload.weeklyRows : [], false);
+    return true;
+  }
+
   // ---------- Theme ----------
   var themeState = "system";
   function applyTheme() {
@@ -1877,6 +2880,26 @@
 
   document.getElementById("templateBtn").addEventListener("click", downloadTemplate);
   document.getElementById("pdfReportBtn").addEventListener("click", generatePdfReport);
+  document.getElementById("exportStudyBtn").addEventListener("click", exportStudy);
+  document.getElementById("importStudyInput").addEventListener("change", function () {
+    var file = this.files[0];
+    var input = this;
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var payload;
+      try {
+        payload = JSON.parse(reader.result);
+      } catch (e) {
+        alert("This file isn't valid JSON, so it can't be a Pulse study file.");
+        input.value = "";
+        return;
+      }
+      importStudy(payload);
+      input.value = "";
+    };
+    reader.readAsText(file);
+  });
   ["reloadSampleBtn", "reloadSampleBtn2"].forEach(function (id) {
     document.getElementById(id).addEventListener("click", function () { loadRows(generateSampleData(), true); });
   });
@@ -1891,6 +2914,9 @@
   }
 
   // ---------- Init ----------
+  var todayStr = new Date().toISOString().slice(0, 10);
+  document.getElementById("ac_date").value = todayStr;
+  document.getElementById("oc_date").value = todayStr;
   loadRows(generateSampleData(), true);
 })();
 </script>
