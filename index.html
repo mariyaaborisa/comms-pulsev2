@@ -987,6 +987,318 @@
     }
     return errors;
   }
+
+  // ---------- Pulse v2: study engine (section 6 of the architecture brief) ----------
+  // Pure: takes rows/actions/campaign data in, returns plain data out. Never
+  // writes causal wording ("caused", "because of", "led to") - only timing
+  // or size lining up ("lines up with", "in the same week as", "accounted
+  // for X% of"). Never states a percentage when the baseline is under 5.
+
+  function computeFunnelForWeek(rows, week, channels) {
+    var reach = sumMetric(rows, week, channels, "reach");
+    var engagements = sumMetric(rows, week, channels, "engagements");
+    var clicks = sumMetric(rows, week, channels, "clicks");
+    var conversions = sumMetric(rows, week, channels, "conversions");
+    return {
+      reach: reach, engagements: engagements, clicks: clicks, conversions: conversions,
+      ctr: reach > 0 ? clicks / reach : null,
+      convRate: clicks > 0 ? conversions / clicks : null
+    };
+  }
+
+  // Assigns each action to the ISO week it falls in (same boundaries as
+  // aggregateToWeek/isoWeekMondayString). Returns a plain object, week -> actions[].
+  function bucketActionsByWeek(actions, weekStartFn) {
+    var map = {};
+    actions.forEach(function (a) {
+      var d = parseAnyDate(a.date);
+      if (!d) return;
+      var week = weekStartFn(d);
+      if (!map[week]) map[week] = [];
+      map[week].push(a);
+    });
+    return map;
+  }
+
+  function classifyWeek(actionsInWeek) {
+    if (!actionsInWeek || !actionsInWeek.length) return "none";
+    var types = new Set(actionsInWeek.map(function (a) { return a.type; }));
+    return types.size >= 2 ? "stacked" : "clean";
+  }
+
+  // Sums campaign.outcomeField by week, within the campaign's date range.
+  // Returns an array of { week, value }, sorted ascending by week.
+  function outcomeSeries(rows, campaign) {
+    var byWeek = {};
+    rows.forEach(function (r) {
+      if (campaign.startDate && r.week < campaign.startDate) return;
+      if (campaign.deadline && r.week > campaign.deadline) return;
+      byWeek[r.week] = (byWeek[r.week] || 0) + toNumber(r[campaign.outcomeField]);
+    });
+    return Object.keys(byWeek).sort().map(function (week) { return { week: week, value: byWeek[week] }; });
+  }
+
+  // A week counts as "full" (complete) once its last day is before `today` -
+  // the current in-progress week never counts toward a pace average.
+  function isFullWeek(weekStr, today) {
+    var weekStart = parseAnyDate(weekStr);
+    var todayDate = parseAnyDate(today);
+    if (!weekStart || !todayDate) return false;
+    var weekEnd = new Date(weekStart.getTime() + 6 * 86400000);
+    return weekEnd.getTime() < todayDate.getTime();
+  }
+
+  function progressToGoal(series, campaign, today) {
+    var current = series.reduce(function (s, r) { return s + r.value; }, 0);
+    var target = campaign.targetCount;
+    var remaining = Math.max(target - current, 0);
+
+    var deadlineDate = parseAnyDate(campaign.deadline);
+    var todayDate = parseAnyDate(today);
+    var weeksLeft = (deadlineDate && todayDate)
+      ? Math.max(0, Math.ceil((deadlineDate.getTime() - todayDate.getTime()) / (7 * 86400000)))
+      : 0;
+    var paceNeededPerWeek = weeksLeft > 0 ? remaining / weeksLeft : null;
+
+    var fullWeeks = series.filter(function (r) { return isFullWeek(r.week, today); });
+    var lastTwoFull = fullWeeks.slice(-2);
+    var recentPacePerWeek = lastTwoFull.length >= 2
+      ? lastTwoFull.reduce(function (s, r) { return s + r.value; }, 0) / lastTwoFull.length
+      : null;
+
+    var status;
+    if (current >= target) {
+      status = "reached";
+    } else if (recentPacePerWeek === null) {
+      status = "insufficient_data";
+    } else if (paceNeededPerWeek === null || recentPacePerWeek >= paceNeededPerWeek) {
+      status = "on_pace";
+    } else {
+      status = "behind";
+    }
+
+    return {
+      current: current, target: target, remaining: remaining, weeksLeft: weeksLeft,
+      paceNeededPerWeek: paceNeededPerWeek, recentPacePerWeek: recentPacePerWeek, status: status
+    };
+  }
+
+  // Baseline is the mean of the two weeks in `series` immediately before
+  // `week`. Falls back to campaign.baselinePerWeek if fewer than two prior
+  // weeks exist; returns { lift: null, reason: "no_baseline" } if neither.
+  // percent is only ever set when the baseline is at least 5 (small-count
+  // percentages are misleading, so buildFindings must never print one below
+  // that floor).
+  function liftForWeek(series, week, campaign) {
+    var byWeek = {};
+    series.forEach(function (r) { byWeek[r.week] = r.value; });
+    var weeks = series.map(function (r) { return r.week; }).sort();
+    var idx = weeks.indexOf(week);
+    var priorWeeks = idx > 0 ? weeks.slice(Math.max(0, idx - 2), idx) : [];
+
+    var baseline;
+    if (priorWeeks.length >= 2) {
+      baseline = priorWeeks.reduce(function (s, w) { return s + byWeek[w]; }, 0) / priorWeeks.length;
+    } else if (campaign.baselinePerWeek !== null && campaign.baselinePerWeek !== undefined) {
+      baseline = campaign.baselinePerWeek;
+    } else {
+      return { lift: null, reason: "no_baseline" };
+    }
+
+    var current = byWeek[week] || 0;
+    var difference = current - baseline;
+    var percent = baseline >= 5 ? (difference / baseline) * 100 : null;
+    return { lift: { difference: difference, percent: percent }, baseline: baseline, reason: null };
+  }
+
+  // Response window length in weeks, tunable from real VSTEM data (open
+  // question in the architecture brief section 13) without touching the
+  // functions that use it.
+  var RESPONSE_WEEKS = 2;
+
+  // The action's own week plus the following week(s), per RESPONSE_WEEKS.
+  function responseWindow(week) {
+    var start = parseAnyDate(week);
+    var weeks = [];
+    for (var i = 0; i < RESPONSE_WEEKS; i++) {
+      weeks.push(isoWeekMondayString(new Date(start.getTime() + i * 7 * 86400000)));
+    }
+    return weeks;
+  }
+
+  // If the action's channel exists in the uploaded rows, returns that
+  // channel's outcomeField total for the response window beside the total
+  // across all channels for the same window. Otherwise { matched: false }.
+  // Deviation from the brief's literal signature: campaign is added as a
+  // parameter because the function otherwise has no way to know which row
+  // field is "outcomes" - see the architecture brief section 6.
+  function channelMatch(action, rows, week, campaign) {
+    var window = responseWindow(week);
+    var inWindow = rows.filter(function (r) { return window.indexOf(r.week) !== -1; });
+    var channelRows = inWindow.filter(function (r) { return r.channel === action.channel; });
+    if (!action.channel || !channelRows.length) return { matched: false };
+    var channelOutcomes = channelRows.reduce(function (s, r) { return s + toNumber(r[campaign.outcomeField]); }, 0);
+    var totalOutcomes = inWindow.reduce(function (s, r) { return s + toNumber(r[campaign.outcomeField]); }, 0);
+    return { matched: true, channelOutcomes: channelOutcomes, totalOutcomes: totalOutcomes, window: window };
+  }
+
+  // Outcomes in a week with a logged action but no channel a row can be
+  // tagged to are unattributed - never credited to any one action. Same
+  // signature deviation as channelMatch, for the same reason.
+  function unattributed(rows, week, actions, campaign) {
+    var actionChannels = new Set(
+      actions.filter(function (a) {
+        var d = parseAnyDate(a.date);
+        return d && isoWeekMondayString(d) === week;
+      }).map(function (a) { return a.channel; }).filter(Boolean)
+    );
+    return rows.filter(function (r) { return r.week === week && !actionChannels.has(r.channel); })
+      .reduce(function (s, r) { return s + toNumber(r[campaign.outcomeField]); }, 0);
+  }
+
+  // Delegates to computeFunnelForWeek and sums stage counts across every
+  // week in the campaign's date range; returns stage-to-stage conversion.
+  function funnelByStage(rows, campaign) {
+    var weeks = Array.from(new Set(rows.map(function (r) { return r.week; })))
+      .filter(function (w) {
+        return (!campaign.startDate || w >= campaign.startDate) && (!campaign.deadline || w <= campaign.deadline);
+      })
+      .sort();
+    var channels = new Set(rows.map(function (r) { return r.channel; }));
+    var totals = { reach: 0, engagements: 0, clicks: 0, conversions: 0 };
+    weeks.forEach(function (w) {
+      var f = computeFunnelForWeek(rows, w, channels);
+      totals.reach += f.reach; totals.engagements += f.engagements; totals.clicks += f.clicks; totals.conversions += f.conversions;
+    });
+    return {
+      reach: totals.reach, engagements: totals.engagements, clicks: totals.clicks, conversions: totals.conversions,
+      reachToEngagement: totals.reach > 0 ? totals.engagements / totals.reach : null,
+      engagementToClicks: totals.engagements > 0 ? totals.clicks / totals.engagements : null,
+      clicksToConversions: totals.clicks > 0 ? totals.conversions / totals.clicks : null
+    };
+  }
+
+  // Builds the study's findings and limits from context = { rows, actions,
+  // campaign, today }. Returns { findings, limits }, matching state.study's
+  // two separate keys. Deviation from the brief's literal "return an array
+  // of findings... always end with a limits list": limits are returned as
+  // their own array rather than appended into the findings array, since
+  // state.study already models them as separate slices (architecture brief
+  // section 4) and mixing them back into one array would just require
+  // splitting them apart again on render.
+  function buildFindings(context) {
+    var rows = context.rows, actions = context.actions, campaign = context.campaign, today = context.today;
+    var findings = [];
+    var limits = [];
+    if (!campaign) return { findings: findings, limits: limits };
+
+    var series = outcomeSeries(rows, campaign);
+    var progress = progressToGoal(series, campaign, today);
+    var seriesByWeek = {};
+    series.forEach(function (r) { seriesByWeek[r.week] = r.value; });
+
+    // Observed: current progress toward the goal.
+    findings.push({
+      type: "observed",
+      text: campaign.outcomeLabel + ": " + fmt(progress.current) + " of " + fmt(progress.target) + " (" + progress.status.replace(/_/g, " ") + ").",
+      evidence: "progressToGoal"
+    });
+
+    var campaignActions = actions.filter(function (a) { return a.campaignId === campaign.id; });
+    var byWeek = bucketActionsByWeek(campaignActions, isoWeekMondayString);
+    var weeksWithOutcomeData = series.map(function (r) { return r.week; });
+    var weeksWithActions = Object.keys(byWeek);
+    var allWeeks = Array.from(new Set(weeksWithOutcomeData.concat(weeksWithActions))).sort();
+
+    allWeeks.forEach(function (week) {
+      var actionsInWeek = byWeek[week] || [];
+      var cls = classifyWeek(actionsInWeek);
+      if (cls === "none") return;
+
+      if (cls === "stacked") {
+        var names = actionsInWeek.map(function (a) { return a.type; }).join(", ");
+        findings.push({
+          type: "not_testable",
+          week: week,
+          text: "Week of " + week + " had more than one kind of action (" + names + "), so no single one can be tied to that week's numbers.",
+          evidence: "classifyWeek"
+        });
+        return;
+      }
+
+      // cls === "clean": exactly one action type this week.
+      var action = actionsInWeek[0];
+      if (!(week in seriesByWeek)) {
+        findings.push({
+          type: "not_testable",
+          week: week,
+          text: "Week of " + week + " logged a " + action.type + " action, but no outcome data is loaded for that week.",
+          evidence: "outcomeSeries"
+        });
+        return;
+      }
+      var current = seriesByWeek[week];
+      if (current < 5) {
+        findings.push({
+          type: "not_testable",
+          week: week,
+          text: "Week of " + week + "'s count (" + fmt(current) + ") is too small to read anything into on its own.",
+          evidence: "outcomeSeries"
+        });
+        return;
+      }
+      var lift = liftForWeek(series, week, campaign);
+      if (lift.lift === null) {
+        findings.push({
+          type: "not_testable",
+          week: week,
+          text: "Week of " + week + " has no baseline (fewer than two prior weeks and no baseline set), so a " + action.type + " action's effect can't be read.",
+          evidence: "liftForWeek"
+        });
+        return;
+      }
+      var direction = lift.lift.difference > 0 ? "up" : (lift.lift.difference < 0 ? "down" : "flat versus");
+      var sizeText = lift.lift.percent !== null
+        ? Math.abs(lift.lift.percent).toFixed(0) + "%"
+        : Math.abs(Math.round(lift.lift.difference)) + " (count)";
+      var match = channelMatch(action, rows, week, campaign);
+      var matchText = match.matched
+        ? (" " + action.channel + " accounted for " + Math.round(match.channelOutcomes) + " of " + Math.round(match.totalOutcomes) + " in that window.")
+        : "";
+      findings.push({
+        type: "associated",
+        week: week,
+        text: "Week of " + week + "'s " + campaign.outcomeLabel.toLowerCase() + " count was " + direction + " " + sizeText +
+          " versus baseline, in the same week as a " + action.type + " action." + matchText,
+        evidence: "liftForWeek + channelMatch"
+      });
+    });
+
+    // Limits.
+    var channelsInRows = new Set(rows.map(function (r) { return r.channel; }));
+    var actionChannelsMissing = Array.from(new Set(
+      campaignActions.filter(function (a) { return a.channel && !channelsInRows.has(a.channel); }).map(function (a) { return a.channel; })
+    ));
+    if (actionChannelsMissing.length) {
+      limits.push("No uploaded metrics for channel(s): " + actionChannelsMissing.join(", ") + ".");
+    }
+    var wordOfMouthCount = campaignActions.filter(function (a) { return a.type === "word_of_mouth"; }).length;
+    if (wordOfMouthCount) {
+      limits.push(wordOfMouthCount + " word-of-mouth action(s) logged with no metrics trail.");
+    }
+    if (!campaign.baselinePerWeek && series.length < 2) {
+      limits.push("No pre-launch baseline set and fewer than two weeks of outcome data - most weeks can't be compared.");
+    }
+    var untaggedTotal = allWeeks.reduce(function (sum, week) {
+      return sum + unattributed(rows, week, campaignActions, campaign);
+    }, 0);
+    if (untaggedTotal > 0) {
+      limits.push(fmt(Math.round(untaggedTotal)) + " " + campaign.outcomeLabel.toLowerCase() + " across the campaign came from channels with no logged action that week (untagged sources).");
+    }
+    limits.push("These are observations, not explanations of why numbers moved - counts are too small here for causal inference.");
+
+    return { findings: findings, limits: limits };
+  }
   // CDLS-ENGINE:END
 
   // ---------- Palette ----------
@@ -1681,20 +1993,8 @@
   var INTERP_NOTABLE_MOVE_PCT = 25; // WoW %% change on a channel's reach worth calling out
   var INTERP_MAX_NOTABLE_MOVERS = 2; // cap how many flagged channels make it into the sentence
 
-  function computeFunnelForWeek(week, channels) {
-    var reach = sumMetric(state.rows, week, channels, "reach");
-    var engagements = sumMetric(state.rows, week, channels, "engagements");
-    var clicks = sumMetric(state.rows, week, channels, "clicks");
-    var conversions = sumMetric(state.rows, week, channels, "conversions");
-    return {
-      reach: reach, engagements: engagements, clicks: clicks, conversions: conversions,
-      ctr: reach > 0 ? clicks / reach : null,
-      convRate: clicks > 0 ? conversions / clicks : null
-    };
-  }
-
   function trailingAverage(weeks, channels, pick) {
-    var vals = weeks.map(function (w) { return pick(computeFunnelForWeek(w, channels)); }).filter(function (v) { return v !== null; });
+    var vals = weeks.map(function (w) { return pick(computeFunnelForWeek(state.rows, w, channels)); }).filter(function (v) { return v !== null; });
     if (!vals.length) return null;
     return vals.reduce(function (a, b) { return a + b; }, 0) / vals.length;
   }
@@ -1731,7 +2031,7 @@
     // Funnel bottleneck: compare each stage to the ONE BEFORE it (not to reach),
     // so the bottleneck is the weakest conditional step, not always "engagement"
     // just because everything looks small next to reach.
-    var f = computeFunnelForWeek(week, channelSet);
+    var f = computeFunnelForWeek(state.rows, week, channelSet);
     if (f.reach > 0) {
       var transitions = [
         { name: "Engagement", rate: f.reach > 0 ? f.engagements / f.reach : null },
@@ -1880,7 +2180,7 @@
 
     // Funnel
     heading("Funnel - Reach -> Engagement -> Clicks -> Sign-ups", 13);
-    var f = computeFunnelForWeek(week, channelSet);
+    var f = computeFunnelForWeek(state.rows, week, channelSet);
     var stages = [
       { name: "Reach", value: f.reach, pct: 100 },
       { name: "Engagement", value: f.engagements, pct: f.reach > 0 ? (f.engagements / f.reach) * 100 : 0 },
