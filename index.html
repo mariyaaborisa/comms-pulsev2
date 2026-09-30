@@ -1,0 +1,1889 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CDLS Comms Pulse</title>
+<meta name="description" content="Stateless, client-side weekly communications dashboard. No accounts, no backend, no data leaves the browser.">
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --good: #0ca30c;
+    --good-text: #006300;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --series-5: #e87ba4;
+    --series-6: #008300;
+    --series-7: #4a3aa7;
+    --series-8: #e34948;
+    --seq-300: #6da7ec;
+    --seq-400: #3987e5;
+    --seq-500: #256abf;
+    --seq-600: #184f95;
+    --focus-ring: #2a78d6;
+    --font-heading: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --gridline: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --good-text: #0ca30c;
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --series-3: #199e70;
+      --series-4: #c98500;
+      --series-5: #d55181;
+      --series-6: #008300;
+      --series-7: #9085e9;
+      --series-8: #e66767;
+      --focus-ring: #3987e5;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --good-text: #0ca30c;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --series-8: #e66767;
+    --focus-ring: #3987e5;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+  }
+  body { padding: 16px; padding-bottom: 48px; }
+  a { color: var(--series-1); }
+  h1, h2, h3 { margin: 0 0 4px; font-family: var(--font-heading); }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+
+  header.app-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  header.app-header p { margin: 4px 0 0; color: var(--text-secondary); font-size: 14px; max-width: 60ch; }
+
+  button {
+    font: inherit; cursor: pointer; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary);
+    padding: 8px 12px;
+  }
+  button:hover { border-color: var(--text-muted); }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--focus-ring); outline-offset: 2px;
+  }
+  .btn-primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  section.card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 15px; letter-spacing: 0.02em; color: var(--text-secondary); font-weight: 600; }
+
+  #dropzone {
+    border: 2px dashed var(--baseline); border-radius: 10px; padding: 20px;
+    text-align: center; color: var(--text-secondary); font-size: 14px;
+    transition: border-color .15s, background .15s;
+  }
+  #dropzone.drag-over { border-color: var(--series-1); background: color-mix(in srgb, var(--series-1) 8%, transparent); }
+  #dropzone label { color: var(--series-1); cursor: pointer; text-decoration: underline; }
+  #fileInput { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  #sampleBanner {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    background: color-mix(in srgb, var(--series-4) 16%, var(--surface-1));
+    border: 1px solid var(--series-4); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 14px;
+  }
+  #sampleBanner strong { color: var(--text-primary); }
+
+  .filters-row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .filter-group { display: flex; flex-direction: column; gap: 8px; }
+  .filter-group label.group-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+  .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface-1); padding: 6px 12px; font-size: 13px;
+  }
+  .chip[aria-pressed="false"] { opacity: 0.5; }
+  .chip .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  select#weekSelect { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); font: inherit; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .kpi-tile { border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .kpi-tile .kpi-label { font-size: 13px; color: var(--text-secondary); }
+  .kpi-tile .kpi-value { font-size: 26px; font-weight: 700; margin: 4px 0; font-variant-numeric: proportional-nums; }
+  .kpi-delta { font-size: 13px; display: inline-flex; align-items: center; gap: 4px; }
+  .kpi-delta.good { color: var(--good-text); }
+  .kpi-delta.critical { color: var(--critical); }
+  .kpi-delta.muted { color: var(--text-muted); }
+
+  .tablist { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tablist button { padding: 6px 12px; font-size: 13px; border-radius: 999px; }
+  .tablist button[aria-selected="true"] { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+
+  .chart-shell { position: relative; height: 280px; }
+  .chart-fallback { color: var(--text-muted); font-size: 14px; padding: 40px 0; text-align: center; }
+  .legend-row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; color: var(--text-secondary); }
+  .legend-row .item { display: inline-flex; align-items: center; gap: 6px; }
+  .legend-row .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+  .funnel-stage { margin-bottom: 10px; }
+  .funnel-stage .stage-head { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .funnel-stage .stage-head .name { color: var(--text-secondary); }
+  .funnel-stage .stage-head .value { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .funnel-track { background: var(--gridline); border-radius: 6px; height: 18px; overflow: hidden; }
+  .funnel-fill { height: 100%; border-radius: 6px; min-width: 2px; }
+  .rate-row { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--gridline); }
+  .rate-item .rate-label { font-size: 13px; color: var(--text-secondary); }
+  .rate-item .rate-value { font-size: 20px; font-weight: 700; }
+
+  .format-mix-intro { color: var(--text-secondary); font-size: 13px; margin: 0 0 14px; }
+  .format-mix-subhead { font-size: 13px; letter-spacing: 0.01em; color: var(--text-secondary); margin: 18px 0 8px; font-weight: 600; }
+  .format-mix-insight { font-size: 14px; color: var(--text-primary); background: var(--page); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 14px; }
+
+  .table-scroll { overflow-x: auto; }
+  table.detail { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+  table.detail th, table.detail td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--gridline); font-variant-numeric: tabular-nums; }
+  table.detail th:first-child, table.detail td:first-child { text-align: left; font-variant-numeric: normal; }
+  table.detail thead th { color: var(--text-secondary); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+  table.detail tfoot td { font-weight: 700; border-top: 2px solid var(--baseline); border-bottom: none; }
+  table.detail .ch-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+
+  .empty-state { text-align: center; padding: 32px 16px; color: var(--text-secondary); }
+
+  .mapping-overlay {
+    position: fixed; inset: 0; background: rgba(11,11,11,0.5); z-index: 50;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .mapping-panel {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto;
+  }
+  .mapping-panel h3 { margin-top: 0; }
+  .mapping-help { color: var(--text-secondary); font-size: 14px; margin-bottom: 16px; }
+  .mapping-grid { display: flex; flex-direction: column; gap: 10px; }
+  .mapping-row { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(140px, 1.4fr); gap: 8px; align-items: center; }
+  .mapping-row label { font-size: 13px; color: var(--text-secondary); }
+  .mapping-row select, .mapping-row input {
+    font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-primary); width: 100%;
+  }
+  @media (max-width: 480px) {
+    .mapping-row { grid-template-columns: 1fr; }
+  }
+
+  .theme-toggle { font-size: 13px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+  @media (max-width: 480px) {
+    .kpi-tile .kpi-value { font-size: 22px; }
+    section.card { padding: 12px; }
+  }
+</style>
+<!-- CDLS-BUILD:FONTS-START -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-heading: 'Open Sans', system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-body: 'Montserrat', system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+</style>
+<!-- CDLS-BUILD:FONTS-END -->
+</head>
+<body>
+<div class="wrap">
+
+  <header class="app-header">
+    <div>
+      <h1>CDLS Comms Pulse</h1>
+      <p>Drop in weekly CSV exports to see growth trends and the click→sign-up funnel across every channel. Everything runs in this browser tab; nothing is uploaded anywhere.</p>
+    </div>
+    <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme">🌓 Theme: <span id="themeLabel">System</span></button>
+  </header>
+
+  <div id="sampleBanner" hidden>
+    <span>📊 <strong>Showing sample data.</strong> Upload your own CSVs to replace it.</span>
+    <div class="btn-row">
+      <button type="button" id="reloadSampleBtn">Reload sample</button>
+      <button type="button" id="clearBtn">Clear</button>
+    </div>
+  </div>
+
+  <section class="card" id="ingest">
+    <h2>Import data</h2>
+    <div id="dropzone">
+      Drag and drop file(s) here, or
+      <label for="fileInput">choose files</label>
+      <input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,.xls" multiple>
+      <div style="margin-top:10px; font-size:13px;">CSV, TSV, or Excel (.xlsx/.xls). Raw exports from Meta/Facebook, Instagram, LinkedIn, Linktree, and Mailchimp-style newsletters are auto-detected and reshaped to weekly; anything else prompts a quick column-mapping step. See the README for the canonical schema.</div>
+    </div>
+    <div class="btn-row" style="margin-top:12px;">
+      <button type="button" id="templateBtn">Download template CSV</button>
+      <button type="button" id="reloadSampleBtn2">Reload sample data</button>
+      <button type="button" id="clearBtn2">Clear data</button>
+    </div>
+  </section>
+
+  <section class="card" id="filters">
+    <h2>Filters</h2>
+    <div class="filters-row">
+      <div class="filter-group">
+        <label class="group-label" id="weekSelectLabel" for="weekSelect">Reporting week</label>
+        <select id="weekSelect" aria-labelledby="weekSelectLabel"></select>
+      </div>
+      <div class="filter-group" style="flex:1; min-width:200px;">
+        <span class="group-label" id="channelChipsLabel">Channels</span>
+        <div class="chip-row" id="channelChips" role="group" aria-labelledby="channelChipsLabel"></div>
+      </div>
+      <div class="filter-group">
+        <span class="group-label">&nbsp;</span>
+        <button type="button" id="pdfReportBtn">⬇ Download PDF report</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="kpis">
+    <h2>Weekly KPIs</h2>
+    <div class="kpi-grid" id="kpiGrid"></div>
+  </section>
+
+  <section class="card" id="growth">
+    <h2>Growth</h2>
+    <div class="tablist" id="metricTabs" role="tablist" aria-label="Growth chart metric"></div>
+    <div class="chart-shell">
+      <canvas id="growthCanvas" role="img" aria-label="Line chart of the selected metric by channel over time"></canvas>
+      <div class="chart-fallback" id="chartFallback" hidden>Chart library unavailable — see the detail table below for the same numbers.</div>
+    </div>
+    <div class="legend-row" id="growthLegend"></div>
+  </section>
+
+  <section class="card" id="funnel">
+    <h2>Funnel — selected week</h2>
+    <div id="funnelStages"></div>
+    <div class="rate-row">
+      <div class="rate-item">
+        <div class="rate-label">Click-through rate (clicks ÷ reach)</div>
+        <div class="rate-value" id="ctrValue">—</div>
+      </div>
+      <div class="rate-item">
+        <div class="rate-label">Conversion rate (sign-ups ÷ clicks)</div>
+        <div class="rate-value" id="convValue">—</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="table">
+    <h2>Detail — selected week</h2>
+    <div class="table-scroll">
+      <table class="detail" id="detailTable">
+        <thead>
+          <tr>
+            <th>Channel</th><th>Reach</th><th>Engagement</th><th>Followers</th><th>Clicks</th><th>Sign-ups</th>
+          </tr>
+        </thead>
+        <tbody id="detailBody"></tbody>
+        <tfoot id="detailFoot"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" id="formatMix">
+    <h2>Format Mix</h2>
+    <p class="format-mix-intro">Which content formats earn attention — fed by Meta/Instagram "Top content formats" exports. This is a companion view, separate from the growth and funnel numbers above.</p>
+    <div id="formatMixEmpty" class="empty-state" hidden>Load a "Top content formats" export to see which formats earn attention here.</div>
+    <div id="formatMixBody" hidden>
+      <div class="filter-group" style="margin-bottom:14px;">
+        <label class="group-label" id="formatMixPeriodLabel" for="formatMixPeriod">Period</label>
+        <select id="formatMixPeriod" aria-labelledby="formatMixPeriodLabel"></select>
+      </div>
+      <div id="formatMixFunnelNote" class="empty-state" style="display:none; padding:10px 0; text-align:left;"></div>
+      <h3 class="format-mix-subhead">Views by format</h3>
+      <div id="formatMixViewsBars"></div>
+      <h3 class="format-mix-subhead">Views per post (efficiency)</h3>
+      <div id="formatMixVppBars"></div>
+      <div class="table-scroll">
+        <table class="detail" id="formatMixTable">
+          <thead>
+            <tr><th>Format</th><th>Published</th><th>Views</th><th>Views/post</th><th>Interactions</th></tr>
+          </thead>
+          <tbody id="formatMixTableBody"></tbody>
+        </table>
+      </div>
+      <p id="formatMixInsight" class="format-mix-insight"></p>
+      <div id="formatMixCompare" hidden>
+        <h3 class="format-mix-subhead">Share of views by period</h3>
+        <div class="table-scroll">
+          <table class="detail" id="formatMixCompareTable"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- CDLS-BUILD:LIBS-START -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<!-- CDLS-BUILD:LIBS-END -->
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Data contract: header aliases ----------
+  // Canonical schema (the ideal input): one row per channel x ISO week.
+  function buildAliasToField(defs) {
+    var out = {};
+    Object.keys(defs).forEach(function (field) {
+      defs[field].forEach(function (alias) { out[alias] = field; });
+    });
+    return out;
+  }
+  var CANONICAL_ALIASES = {
+    week: ["week", "week_start", "date", "reporting_week", "week_of", "weekof"],
+    channel: ["channel", "platform", "source", "network"],
+    reach: ["reach"],
+    impressions: ["impressions", "impression", "views", "view"],
+    engagements: ["engagements", "engagement", "total_engagements"],
+    followers: ["followers", "followers_total", "subscribers_total", "audience", "subscribers"],
+    clicks: ["clicks", "link_clicks", "linktree_clicks", "total_clicks", "taps"],
+    conversions: ["conversions", "conversion"],
+    form_submissions: ["form_submissions", "submissions", "responses", "response"],
+    new_subscribers: ["new_subscribers", "new_subscriber", "signups", "sign_ups", "new_signups"]
+  };
+  var CANONICAL_ALIAS_TO_FIELD = buildAliasToField(CANONICAL_ALIASES);
+
+  var METRICS = [
+    { key: "reach", label: "Reach" },
+    { key: "engagements", label: "Engagement" },
+    { key: "followers", label: "Followers" },
+    { key: "clicks", label: "Clicks" },
+    { key: "conversions", label: "Sign-ups" }
+  ];
+
+  var TEMPLATE_CSV = "week,channel,reach,impressions,engagements,followers,clicks,conversions\n" +
+    "2026-08-04,Instagram,5200,6100,410,3100,180,12\n" +
+    "2026-08-04,Facebook,3100,3600,150,2400,90,4\n" +
+    "2026-08-04,LinkedIn,1800,2000,95,950,60,3\n" +
+    "2026-08-04,Linktree,0,0,0,0,540,28\n" +
+    "2026-08-04,Forms,0,0,0,0,0,15\n" +
+    "2026-08-04,Newsletter,0,0,0,4200,210,9\n";
+
+  // ---------- Normalization helpers ----------
+  function normalizeHeader(h) {
+    return String(h == null ? "" : h).trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  }
+  function toNumber(v) {
+    if (v === undefined || v === null || v === "") return 0;
+    var n = parseFloat(String(v).replace(/[,$%\s]/g, ""));
+    return isNaN(n) ? 0 : n;
+  }
+  function isBlank(v) { return v === undefined || v === null || String(v).trim() === ""; }
+  function formatWeekLabel(iso) {
+    var d = new Date(iso + "T00:00:00Z");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  }
+  function fmt(n) { return Math.round(n).toLocaleString("en-US"); }
+
+  // Parses week/day values from canonical CSVs, platform exports (varied date
+  // formats), and spreadsheet cells (real Date objects or Excel serials) into
+  // a UTC-midnight Date. Returns null if unparseable.
+  function parseAnyDate(raw) {
+    if (raw instanceof Date) {
+      if (isNaN(raw.getTime())) return null;
+      return new Date(Date.UTC(raw.getFullYear(), raw.getMonth(), raw.getDate()));
+    }
+    if (typeof raw === "number") {
+      if (raw > 20000 && raw < 90000) { // Excel serial date fallback (days since 1899-12-30)
+        return new Date(Date.UTC(1899, 11, 30) + raw * 86400000);
+      }
+      return null;
+    }
+    if (isBlank(raw)) return null;
+    var s = String(raw).trim();
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  }
+  // Monday of the ISO week containing the given UTC-midnight Date, as YYYY-MM-DD.
+  function isoWeekMondayString(d) {
+    var dow = d.getUTCDay(); // 0=Sun..6=Sat
+    var sinceMonday = (dow + 6) % 7;
+    var monday = new Date(d.getTime() - sinceMonday * 86400000);
+    return monday.getUTCFullYear() + "-" + String(monday.getUTCMonth() + 1).padStart(2, "0") + "-" + String(monday.getUTCDate()).padStart(2, "0");
+  }
+
+  // Maps a raw parsed row (object keyed by source header) to canonical fields
+  // using an alias->field lookup. Numeric fields sum when more than one source
+  // column maps to the same canonical field (e.g. likes+comments+shares -> engagements);
+  // channel/date pass through as the raw string/Date value. Columns with no
+  // alias match (respondent names, emails, free text, etc.) are never copied -
+  // this is what keeps PII out of the tool by construction.
+  function mapRow(raw, aliasToField) {
+    var mapped = {};
+    Object.keys(raw).forEach(function (key) {
+      var field = aliasToField[normalizeHeader(key)];
+      if (!field || isBlank(raw[key])) return;
+      if (field === "channel" || field === "date" || field === "week") {
+        mapped[field] = raw[key];
+      } else {
+        mapped[field] = (mapped[field] || 0) + toNumber(raw[key]);
+      }
+    });
+    return mapped;
+  }
+
+  // Builds one pre-aggregation row (still at whatever grain the source file
+  // was in - daily, per-post, or already-weekly) from a mapped field object.
+  // Shared by the canonical path, every adapter, and the manual-mapping path.
+  function buildPreAggRow(mapped, channel, dateValue) {
+    if (isBlank(channel) || isBlank(dateValue)) return null;
+    var reach = mapped.reach !== undefined ? toNumber(mapped.reach) : toNumber(mapped.impressions);
+    var conversions = mapped.conversions !== undefined
+      ? toNumber(mapped.conversions)
+      : (toNumber(mapped.form_submissions) + toNumber(mapped.new_subscribers));
+    return {
+      rawdate: dateValue,
+      channel: String(channel).trim(),
+      reach: reach,
+      impressions: toNumber(mapped.impressions),
+      engagements: toNumber(mapped.engagements),
+      followers: toNumber(mapped.followers),
+      clicks: toNumber(mapped.clicks),
+      conversions: conversions
+    };
+  }
+
+  function normalizeCanonicalRows(rawRows) {
+    var out = [];
+    rawRows.forEach(function (raw) {
+      var mapped = mapRow(raw, CANONICAL_ALIAS_TO_FIELD);
+      var row = buildPreAggRow(mapped, mapped.channel, mapped.week);
+      if (row) out.push(row);
+    });
+    return out;
+  }
+
+  // Reshapes any-grain pre-aggregation rows into exactly one row per
+  // channel x ISO week: additive metrics sum across the week, followers
+  // (a running total, not a per-day count) takes the latest value seen.
+  function aggregateToWeek(preAggRows) {
+    var groups = {};
+    preAggRows.forEach(function (r) {
+      var d = parseAnyDate(r.rawdate);
+      if (!d) return;
+      var week = isoWeekMondayString(d);
+      var key = r.channel + "|" + week;
+      if (!groups[key]) {
+        groups[key] = { week: week, channel: r.channel, reach: 0, impressions: 0, engagements: 0, followers: 0, clicks: 0, conversions: 0, _followersDate: null };
+      }
+      var g = groups[key];
+      g.reach += r.reach;
+      g.impressions += r.impressions;
+      g.engagements += r.engagements;
+      g.clicks += r.clicks;
+      g.conversions += r.conversions;
+      if (g._followersDate === null || d.getTime() >= g._followersDate) { g.followers = r.followers; g._followersDate = d.getTime(); }
+    });
+    return Object.keys(groups).map(function (k) {
+      var g = groups[k];
+      delete g._followersDate;
+      return g;
+    });
+  }
+  function looksCanonical(normHeaderSet) {
+    var hasWeek = CANONICAL_ALIASES.week.some(function (a) { return normHeaderSet.has(a); });
+    var hasChannel = CANONICAL_ALIASES.channel.some(function (a) { return normHeaderSet.has(a); });
+    return hasWeek && hasChannel;
+  }
+
+  // ---------- Platform adapters ----------
+  // Each adapter recognizes one platform's raw export (by column signature,
+  // with a filename boost) and maps it to canonical fields for a fixed
+  // channel. Exports are usually daily/per-post; aggregateToWeek() rolls
+  // them up. To fix an adapter after a platform changes its export, edit
+  // its aliasToField / signature here - nothing else in the app needs to
+  // change. If a fix isn't obvious, the manual-mapping fallback (triggered
+  // when no adapter matches) covers the file in the meantime.
+  var ADAPTERS = [
+    {
+      id: "facebook_page_insights",
+      label: "Meta / Facebook Page Insights",
+      channel: "Facebook",
+      filenameHints: [/facebook/i, /\bfb\b/i, /meta.*page/i],
+      signature: ["date", "reach", "page_reach", "impressions", "page_impressions", "reactions_comments_and_shares",
+        "content_interactions", "link_clicks", "page_followers", "page_fans", "page_likes"],
+      aliasToField: buildAliasToField({
+        date: ["date", "day"],
+        reach: ["reach", "post_reach", "page_reach", "total_reach"],
+        impressions: ["impressions", "page_impressions", "total_impressions"],
+        engagements: ["reactions_comments_and_shares", "content_interactions", "engagement", "engagements", "post_engagements", "reactions", "comments", "shares"],
+        followers: ["page_followers", "followers", "page_fans", "page_likes", "total_page_likes", "net_followers"],
+        clicks: ["link_clicks", "post_clicks", "clicks"],
+        conversions: ["conversions"]
+      })
+    },
+    {
+      id: "instagram_insights",
+      label: "Instagram Insights",
+      channel: "Instagram",
+      filenameHints: [/instagram/i, /\big\b/i],
+      signature: ["date", "reach", "accounts_reached", "impressions", "follows", "net_follows", "profile_visits",
+        "likes", "comments", "shares", "saves", "website_taps", "profile_clicks"],
+      aliasToField: buildAliasToField({
+        date: ["date", "day"],
+        reach: ["reach", "accounts_reached"],
+        impressions: ["impressions"],
+        engagements: ["engagement", "engagements", "interactions", "likes", "comments", "shares", "saves"],
+        followers: ["followers", "follows", "net_follows", "total_followers"],
+        clicks: ["website_taps", "external_link_taps", "profile_clicks", "link_clicks"],
+        conversions: ["conversions"]
+      })
+    },
+    {
+      id: "linkedin_page_analytics",
+      label: "LinkedIn Page Analytics",
+      channel: "LinkedIn",
+      filenameHints: [/linkedin/i],
+      signature: ["date", "impressions", "clicks", "reactions", "comments", "reposts", "shares",
+        "engagement_rate", "new_followers", "total_followers"],
+      aliasToField: buildAliasToField({
+        date: ["date", "day"],
+        reach: ["impressions", "unique_impressions"],
+        impressions: ["impressions"],
+        engagements: ["reactions", "comments", "reposts", "shares", "engagements", "engagement"],
+        followers: ["total_followers", "followers"],
+        clicks: ["clicks"],
+        conversions: ["conversions"]
+      })
+    },
+    {
+      id: "linktree",
+      label: "Linktree Analytics",
+      channel: "Linktree",
+      filenameHints: [/linktree/i],
+      signature: ["date", "views", "total_views", "clicks", "total_clicks", "click_through_rate"],
+      aliasToField: buildAliasToField({
+        date: ["date", "day"],
+        reach: ["views", "total_views", "page_views"],
+        impressions: ["views", "total_views"],
+        clicks: ["clicks", "total_clicks", "link_clicks"],
+        conversions: ["conversions"]
+      })
+    },
+    {
+      id: "newsletter_mailchimp",
+      label: "Newsletter (Mailchimp-style export)",
+      channel: "Newsletter",
+      filenameHints: [/mailchimp/i, /newsletter/i, /campaign/i],
+      signature: ["send_date", "send_time", "emails_sent", "recipients", "opens", "unique_opens",
+        "clicks", "unique_clicks", "subscribers", "total_subscribers"],
+      aliasToField: buildAliasToField({
+        date: ["send_date", "send_time", "date"],
+        reach: ["emails_sent", "recipients", "successful_deliveries"],
+        impressions: ["emails_sent", "recipients"],
+        engagements: ["unique_opens", "opens"],
+        followers: ["total_subscribers", "subscribers", "list_size", "audience_total"],
+        clicks: ["unique_clicks", "clicks"],
+        conversions: ["conversions"],
+        new_subscribers: ["new_subscribers", "subscribed", "signups"]
+      })
+    }
+  ];
+  var ADAPTER_MATCH_THRESHOLD = 0.4;
+
+  function detectAdapter(headers, filename) {
+    var normSet = new Set(headers.map(normalizeHeader));
+    var best = null, bestScore = 0;
+    ADAPTERS.forEach(function (a) {
+      var matched = a.signature.filter(function (s) { return normSet.has(s); }).length;
+      var score = matched / a.signature.length;
+      if (a.filenameHints.some(function (re) { return re.test(filename); })) score += 0.15;
+      if (score > bestScore) { bestScore = score; best = a; }
+    });
+    return bestScore >= ADAPTER_MATCH_THRESHOLD ? best : null;
+  }
+
+  function runAdapter(adapter, rawRows) {
+    var out = [];
+    rawRows.forEach(function (raw) {
+      var mapped = mapRow(raw, adapter.aliasToField);
+      var row = buildPreAggRow(mapped, adapter.channel, mapped.date);
+      if (row) out.push(row);
+    });
+    return out;
+  }
+
+  // ---------- Sample data ----------
+  function generateSampleData() {
+    var channels = ["Instagram", "Facebook", "LinkedIn", "Linktree", "Forms", "Newsletter"];
+    var base = {
+      Instagram: { reach: 4800, engagements: 380, followers: 2900, clicks: 150, conversions: 9, growth: 1.03 },
+      Facebook: { reach: 2900, engagements: 140, followers: 2200, clicks: 80, conversions: 4, growth: 1.01 },
+      LinkedIn: { reach: 1500, engagements: 80, followers: 800, clicks: 50, conversions: 3, growth: 1.05 },
+      Linktree: { reach: 0, engagements: 0, followers: 0, clicks: 480, conversions: 24, growth: 1.02 },
+      Forms: { reach: 0, engagements: 0, followers: 0, clicks: 0, conversions: 12, growth: 1.02 },
+      Newsletter: { reach: 0, engagements: 0, followers: 3900, clicks: 190, conversions: 7, growth: 1.015 }
+    };
+    var seed = 42;
+    function rand() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
+    var weeks = [];
+    var start = new Date("2026-06-29T00:00:00Z");
+    for (var w = 0; w < 10; w++) {
+      var d = new Date(start.getTime() + w * 7 * 86400000);
+      weeks.push(d.toISOString().slice(0, 10));
+    }
+    var rows = [];
+    channels.forEach(function (ch) {
+      var b = base[ch];
+      var reach = b.reach, engagements = b.engagements, followers = b.followers, clicks = b.clicks, conversions = b.conversions;
+      weeks.forEach(function (week) {
+        var jitter = 0.9 + rand() * 0.2;
+        rows.push({
+          week: week,
+          channel: ch,
+          reach: Math.round(reach * jitter),
+          impressions: Math.round(reach * jitter * 1.2),
+          engagements: Math.round(engagements * jitter),
+          followers: Math.round(followers),
+          clicks: Math.round(clicks * jitter),
+          conversions: Math.max(0, Math.round(conversions * jitter))
+        });
+        reach *= b.growth; engagements *= b.growth; followers *= 1.01; clicks *= b.growth; conversions *= b.growth;
+      });
+    });
+    return rows;
+  }
+
+  // ---------- Palette ----------
+  var SERIES_VARS = ["--series-1", "--series-2", "--series-3", "--series-4", "--series-5", "--series-6", "--series-7", "--series-8"];
+  function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  // ---------- State ----------
+  var state = {
+    rows: [],
+    isSample: true,
+    channels: [],
+    channelColor: {},
+    weeks: [],
+    selectedWeek: null,
+    selectedChannels: new Set(),
+    metric: "reach",
+    formatMix: [], // { period (ISO week-Monday), format, published, views, interactions }
+    formatColor: {},
+    formatMixPeriod: null
+  };
+  var chartInstance = null;
+
+  function loadRows(rows, isSample) {
+    state.rows = rows;
+    state.isSample = isSample;
+    var channelSet = {};
+    rows.forEach(function (r) { channelSet[r.channel] = true; });
+    state.channels = Object.keys(channelSet).sort(function (a, b) { return a.localeCompare(b); });
+    state.channelColor = {};
+    state.channels.forEach(function (ch, i) {
+      state.channelColor[ch] = SERIES_VARS[i % SERIES_VARS.length];
+    });
+    var weekSet = {};
+    rows.forEach(function (r) { weekSet[r.week] = true; });
+    state.weeks = Object.keys(weekSet).sort();
+    state.selectedChannels = new Set(state.channels);
+    state.selectedWeek = state.weeks.length ? state.weeks[state.weeks.length - 1] : null;
+    document.getElementById("sampleBanner").hidden = !isSample;
+    renderAll();
+  }
+
+  // Format Mix is entirely separate from the growth/funnel dataset above -
+  // it never touches state.rows, so it can never invent funnel numbers.
+  // Re-importing a file tagged to a period already loaded replaces that
+  // period's rows (reconciles to one), rather than duplicating them.
+  function upsertFormatMix(period, formatRows) {
+    state.formatMix = state.formatMix.filter(function (r) { return r.period !== period; });
+    formatRows.forEach(function (r) {
+      state.formatMix.push({ period: period, format: r.format, published: r.published, views: r.views, interactions: r.interactions });
+    });
+    var formatSet = {};
+    state.formatMix.forEach(function (r) { formatSet[r.format] = true; });
+    var formatNames = Object.keys(formatSet).sort(function (a, b) { return a.localeCompare(b); });
+    state.formatColor = {};
+    formatNames.forEach(function (name, i) { state.formatColor[name] = SERIES_VARS[i % SERIES_VARS.length]; });
+    var periods = Array.from(new Set(state.formatMix.map(function (r) { return r.period; }))).sort();
+    if (!periods.includes(state.formatMixPeriod)) {
+      state.formatMixPeriod = periods.length ? periods[periods.length - 1] : null;
+    }
+  }
+
+  function sumMetric(rows, week, channels, key) {
+    var total = 0;
+    rows.forEach(function (r) {
+      if (r.week === week && channels.has(r.channel)) total += r[key];
+    });
+    return total;
+  }
+
+  // ---------- Rendering ----------
+  function safeRender(fn) {
+    try { fn(); } catch (e) { console.error(e); }
+  }
+
+  function renderAll() {
+    safeRender(renderWeekSelect);
+    safeRender(renderChips);
+    safeRender(renderKPIs);
+    safeRender(renderMetricTabs);
+    safeRender(renderGrowthChart);
+    safeRender(renderFunnel);
+    safeRender(renderTable);
+    safeRender(renderFormatMix);
+  }
+
+  function renderWeekSelect() {
+    var sel = document.getElementById("weekSelect");
+    sel.innerHTML = "";
+    if (!state.weeks.length) {
+      sel.disabled = true;
+      var opt = document.createElement("option");
+      opt.textContent = "No data";
+      sel.appendChild(opt);
+      return;
+    }
+    sel.disabled = false;
+    state.weeks.forEach(function (w) {
+      var opt = document.createElement("option");
+      opt.value = w;
+      opt.textContent = "Week of " + formatWeekLabel(w);
+      if (w === state.selectedWeek) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.onchange = function () { state.selectedWeek = sel.value; renderAll(); };
+  }
+
+  function renderChips() {
+    var container = document.getElementById("channelChips");
+    container.innerHTML = "";
+    state.channels.forEach(function (ch) {
+      var pressed = state.selectedChannels.has(ch);
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip";
+      btn.setAttribute("aria-pressed", String(pressed));
+      var dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = "var(" + state.channelColor[ch] + ")";
+      btn.appendChild(dot);
+      btn.appendChild(document.createTextNode(ch));
+      btn.addEventListener("click", function () {
+        if (state.selectedChannels.has(ch)) {
+          if (state.selectedChannels.size === 1) return;
+          state.selectedChannels.delete(ch);
+        } else {
+          state.selectedChannels.add(ch);
+        }
+        renderAll();
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  function computeDelta(cur, prevExists, prev) {
+    if (!prevExists) return { text: "No prior week", cls: "muted" };
+    if (prev === 0) {
+      if (cur === 0) return { text: "flat", cls: "muted" };
+      return { text: "▲ New", cls: "good" };
+    }
+    var diff = cur - prev;
+    var pct = (diff / prev) * 100;
+    if (diff > 0) return { text: "▲ " + Math.abs(pct).toFixed(1) + "%", cls: "good" };
+    if (diff < 0) return { text: "▼ " + Math.abs(pct).toFixed(1) + "%", cls: "critical" };
+    return { text: "flat 0%", cls: "muted" };
+  }
+
+  function renderKPIs() {
+    var grid = document.getElementById("kpiGrid");
+    grid.innerHTML = "";
+    if (!state.selectedWeek) {
+      grid.innerHTML = '<div class="empty-state">No data loaded. Upload a CSV or reload the sample data.</div>';
+      return;
+    }
+    var weekIdx = state.weeks.indexOf(state.selectedWeek);
+    var prevWeek = weekIdx > 0 ? state.weeks[weekIdx - 1] : null;
+    METRICS.forEach(function (m) {
+      var cur = sumMetric(state.rows, state.selectedWeek, state.selectedChannels, m.key);
+      var prev = prevWeek !== null ? sumMetric(state.rows, prevWeek, state.selectedChannels, m.key) : 0;
+      var delta = computeDelta(cur, prevWeek !== null, prev);
+      var tile = document.createElement("div");
+      tile.className = "kpi-tile";
+      tile.innerHTML = '<div class="kpi-label">' + m.label + '</div>' +
+        '<div class="kpi-value">' + fmt(cur) + '</div>' +
+        '<div class="kpi-delta ' + delta.cls + '">' + delta.text + '</div>';
+      grid.appendChild(tile);
+    });
+  }
+
+  function renderMetricTabs() {
+    var container = document.getElementById("metricTabs");
+    container.innerHTML = "";
+    METRICS.forEach(function (m, i) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.setAttribute("role", "tab");
+      btn.id = "tab-" + m.key;
+      btn.setAttribute("aria-selected", String(state.metric === m.key));
+      btn.tabIndex = state.metric === m.key ? 0 : -1;
+      btn.textContent = m.label;
+      btn.addEventListener("click", function () { state.metric = m.key; renderAll(); });
+      btn.addEventListener("keydown", function (e) {
+        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+        e.preventDefault();
+        var dir = e.key === "ArrowRight" ? 1 : -1;
+        var next = METRICS[(i + dir + METRICS.length) % METRICS.length];
+        state.metric = next.key;
+        renderAll();
+        document.getElementById("tab-" + next.key).focus();
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  function renderGrowthChart() {
+    var canvas = document.getElementById("growthCanvas");
+    var fallback = document.getElementById("chartFallback");
+    var legend = document.getElementById("growthLegend");
+    legend.innerHTML = "";
+    var activeChannels = state.channels.filter(function (ch) { return state.selectedChannels.has(ch); });
+
+    activeChannels.forEach(function (ch) {
+      var item = document.createElement("span");
+      item.className = "item";
+      var dot = document.createElement("span");
+      dot.className = "dot";
+      dot.style.background = "var(" + state.channelColor[ch] + ")";
+      item.appendChild(dot);
+      item.appendChild(document.createTextNode(ch));
+      legend.appendChild(item);
+    });
+
+    if (typeof Chart === "undefined") {
+      canvas.hidden = true;
+      fallback.hidden = false;
+      return;
+    }
+    canvas.hidden = false;
+    fallback.hidden = true;
+
+    if (!state.weeks.length) {
+      if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+      return;
+    }
+
+    var labels = state.weeks.map(formatWeekLabel);
+    var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var datasets = activeChannels.map(function (ch) {
+      var color = cssVar(state.channelColor[ch]);
+      return {
+        label: ch,
+        data: state.weeks.map(function (w) { return sumMetric(state.rows, w, new Set([ch]), state.metric); }),
+        borderColor: color,
+        backgroundColor: color,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.3
+      };
+    });
+
+    var ink = cssVar("--text-secondary");
+    var grid = cssVar("--gridline");
+
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: reduceMotion ? false : { duration: 400 },
+        plugins: { legend: { display: false }, tooltip: { mode: "index", intersect: false } },
+        interaction: { mode: "index", intersect: false },
+        scales: {
+          x: { ticks: { color: ink }, grid: { color: grid } },
+          y: { ticks: { color: ink }, grid: { color: grid }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  function renderFunnel() {
+    var container = document.getElementById("funnelStages");
+    container.innerHTML = "";
+    var week = state.selectedWeek;
+    var reach = week ? sumMetric(state.rows, week, state.selectedChannels, "reach") : 0;
+    var engagements = week ? sumMetric(state.rows, week, state.selectedChannels, "engagements") : 0;
+    var clicks = week ? sumMetric(state.rows, week, state.selectedChannels, "clicks") : 0;
+    var conversions = week ? sumMetric(state.rows, week, state.selectedChannels, "conversions") : 0;
+
+    var stages = [
+      { name: "Reach", value: reach, colorVar: "--seq-300" },
+      { name: "Engagement", value: engagements, colorVar: "--seq-400" },
+      { name: "Clicks", value: clicks, colorVar: "--seq-500" },
+      { name: "Sign-ups", value: conversions, colorVar: "--seq-600" }
+    ];
+    stages.forEach(function (s) {
+      var pct = reach > 0 ? (s.value / reach) * 100 : 0;
+      var row = document.createElement("div");
+      row.className = "funnel-stage";
+      row.innerHTML =
+        '<div class="stage-head"><span class="name">' + s.name + '</span>' +
+        '<span class="value">' + fmt(s.value) + (reach > 0 ? " · " + pct.toFixed(1) + "% of reach" : "") + '</span></div>' +
+        '<div class="funnel-track"><div class="funnel-fill" style="width:' + Math.min(100, Math.max(pct, s.value > 0 ? 1 : 0)) + '%; background: var(' + s.colorVar + ')"></div></div>';
+      container.appendChild(row);
+    });
+
+    document.getElementById("ctrValue").textContent = reach > 0 ? ((clicks / reach) * 100).toFixed(2) + "%" : "—";
+    document.getElementById("convValue").textContent = clicks > 0 ? ((conversions / clicks) * 100).toFixed(2) + "%" : "—";
+  }
+
+  function renderTable() {
+    var body = document.getElementById("detailBody");
+    var foot = document.getElementById("detailFoot");
+    body.innerHTML = "";
+    foot.innerHTML = "";
+    var week = state.selectedWeek;
+    var activeChannels = state.channels.filter(function (ch) { return state.selectedChannels.has(ch); });
+    if (!week || !activeChannels.length) {
+      body.innerHTML = '<tr><td colspan="6" class="empty-state">No data to show.</td></tr>';
+      return;
+    }
+    var totals = { reach: 0, engagements: 0, followers: 0, clicks: 0, conversions: 0 };
+    activeChannels.forEach(function (ch) {
+      var row = state.rows.find(function (r) { return r.week === week && r.channel === ch; });
+      var vals = row || { reach: 0, engagements: 0, followers: 0, clicks: 0, conversions: 0 };
+      METRICS.forEach(function (m) { totals[m.key] += vals[m.key]; });
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td><span class="ch-dot" style="background:var(' + state.channelColor[ch] + ')"></span>' + ch + '</td>' +
+        '<td>' + fmt(vals.reach) + '</td>' +
+        '<td>' + fmt(vals.engagements) + '</td>' +
+        '<td>' + fmt(vals.followers) + '</td>' +
+        '<td>' + fmt(vals.clicks) + '</td>' +
+        '<td>' + fmt(vals.conversions) + '</td>';
+      body.appendChild(tr);
+    });
+    foot.innerHTML = '<tr><td>Total</td><td>' + fmt(totals.reach) + '</td><td>' + fmt(totals.engagements) + '</td><td>' +
+      fmt(totals.followers) + '</td><td>' + fmt(totals.clicks) + '</td><td>' + fmt(totals.conversions) + '</td></tr>';
+  }
+
+  // ---------- Format Mix (content-format breakdown, separate from funnel) ----------
+  // Rule-based, same spirit as the report interpretation below: which format
+  // earned the most views, whether it did so efficiently (small share of
+  // posts), and which format was published most but converted views poorly.
+  var FORMAT_MIX_NOTABLE_MOVE_PT = 10; // percentage-point gap that counts as "efficient" (views share vs. posts share)
+  function buildFormatMixInsight(period) {
+    var rows = state.formatMix.filter(function (r) { return r.period === period; });
+    if (!rows.length) return "";
+    var totalViews = rows.reduce(function (s, r) { return s + r.views; }, 0);
+    var totalPublished = rows.reduce(function (s, r) { return s + r.published; }, 0);
+    if (totalViews <= 0) return "No views recorded for this period.";
+
+    var byViews = rows.slice().sort(function (a, b) { return b.views - a.views; });
+    var top = byViews[0];
+    var topViewsShare = (top.views / totalViews) * 100;
+    var topPublishedShare = totalPublished > 0 ? (top.published / totalPublished) * 100 : 0;
+
+    var withPosts = rows.filter(function (r) { return r.published > 0; });
+    var byVpp = withPosts.map(function (r) { return { format: r.format, vpp: r.views / r.published, published: r.published }; })
+      .sort(function (a, b) { return a.vpp - b.vpp; });
+    var weakest = byVpp.length ? byVpp[0] : null;
+    var mostPublished = rows.slice().sort(function (a, b) { return b.published - a.published; })[0];
+
+    var sentence = top.format + " earned " + topViewsShare.toFixed(0) + "% of views";
+    if (topPublishedShare > 0 && topViewsShare - topPublishedShare >= FORMAT_MIX_NOTABLE_MOVE_PT) {
+      sentence += " from just " + topPublishedShare.toFixed(0) + "% of posts.";
+    } else {
+      sentence += ".";
+    }
+    if (weakest && mostPublished && weakest.format === mostPublished.format && mostPublished.format !== top.format) {
+      sentence += " " + mostPublished.format + " was published most (" + fmt(mostPublished.published) + " posts) but drew the fewest views per post (" + fmt(Math.round(weakest.vpp)) + " avg).";
+    } else {
+      if (mostPublished && mostPublished.format !== top.format) sentence += " " + mostPublished.format + " was published most this period (" + fmt(mostPublished.published) + " posts).";
+      if (weakest && weakest.format !== top.format && weakest.format !== (mostPublished && mostPublished.format)) sentence += " " + weakest.format + " drew the fewest views per post (" + fmt(Math.round(weakest.vpp)) + " avg).";
+    }
+    return sentence;
+  }
+
+  function formatMixBars(containerId, rows, valueKey, formatLabel) {
+    var container = document.getElementById(containerId);
+    container.innerHTML = "";
+    var max = rows.reduce(function (m, r) { return Math.max(m, r[valueKey]); }, 0);
+    rows.forEach(function (r) {
+      var pct = max > 0 ? (r[valueKey] / max) * 100 : 0;
+      var row = document.createElement("div");
+      row.className = "funnel-stage";
+      row.innerHTML =
+        '<div class="stage-head"><span class="name">' + r.format + '</span><span class="value">' + formatLabel(r) + '</span></div>' +
+        '<div class="funnel-track"><div class="funnel-fill" style="width:' + Math.max(pct, r[valueKey] > 0 ? 1 : 0) + '%; background: var(' + (state.formatColor[r.format] || "--series-1") + ')"></div></div>';
+      container.appendChild(row);
+    });
+  }
+
+  function renderFormatMix() {
+    var empty = document.getElementById("formatMixEmpty");
+    var body = document.getElementById("formatMixBody");
+    if (!state.formatMix.length) {
+      empty.hidden = false;
+      body.hidden = true;
+      return;
+    }
+    empty.hidden = true;
+    body.hidden = false;
+
+    var periods = Array.from(new Set(state.formatMix.map(function (r) { return r.period; }))).sort();
+    var sel = document.getElementById("formatMixPeriod");
+    sel.innerHTML = "";
+    periods.forEach(function (p) {
+      var opt = document.createElement("option");
+      opt.value = p;
+      opt.textContent = "Week of " + formatWeekLabel(p);
+      if (p === state.formatMixPeriod) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.onchange = function () { state.formatMixPeriod = sel.value; renderFormatMix(); };
+
+    var note = document.getElementById("formatMixFunnelNote");
+    if (!state.rows.length) {
+      note.style.display = "block";
+      note.textContent = "The growth and funnel views above need the Meta overview (reach/engagement) and audience (followers) exports, plus Linktree/Forms/Newsletter for clicks and sign-ups — none of that is loaded right now. This Format Mix view only shows which content formats earn attention; it can't substitute for the funnel.";
+    } else {
+      note.style.display = "none";
+    }
+
+    var period = state.formatMixPeriod;
+    var rows = state.formatMix.filter(function (r) { return r.period === period; }).sort(function (a, b) { return b.views - a.views; });
+
+    formatMixBars("formatMixViewsBars", rows, "views", function (r) { return fmt(r.views); });
+    var vppRows = rows.map(function (r) { return { format: r.format, vpp: r.published > 0 ? r.views / r.published : 0, published: r.published }; })
+      .sort(function (a, b) { return b.vpp - a.vpp; });
+    formatMixBars("formatMixVppBars", vppRows, "vpp", function (r) { return fmt(Math.round(r.vpp)) + " / post"; });
+
+    var tbody = document.getElementById("formatMixTableBody");
+    tbody.innerHTML = "";
+    rows.forEach(function (r) {
+      var vpp = r.published > 0 ? r.views / r.published : 0;
+      var tr = document.createElement("tr");
+      tr.innerHTML = '<td><span class="ch-dot" style="background:var(' + (state.formatColor[r.format] || "--series-1") + ')"></span>' + r.format + '</td>' +
+        '<td>' + fmt(r.published) + '</td><td>' + fmt(r.views) + '</td><td>' + fmt(Math.round(vpp)) + '</td><td>' + fmt(r.interactions) + '</td>';
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("formatMixInsight").textContent = buildFormatMixInsight(period);
+
+    var compareWrap = document.getElementById("formatMixCompare");
+    if (periods.length >= 2) {
+      compareWrap.hidden = false;
+      var allFormats = Array.from(new Set(state.formatMix.map(function (r) { return r.format; }))).sort(function (a, b) { return a.localeCompare(b); });
+      var table = document.getElementById("formatMixCompareTable");
+      var thead = "<thead><tr><th>Period</th>" + allFormats.map(function (f) { return "<th>" + f + "</th>"; }).join("") + "</tr></thead>";
+      var tbodyHtml = periods.map(function (p) {
+        var pRows = state.formatMix.filter(function (r) { return r.period === p; });
+        var pTotal = pRows.reduce(function (s, r) { return s + r.views; }, 0);
+        var cells = allFormats.map(function (f) {
+          var r = pRows.find(function (r2) { return r2.format === f; });
+          if (!r || pTotal <= 0) return "<td>—</td>";
+          return "<td>" + ((r.views / pTotal) * 100).toFixed(0) + "%</td>";
+        }).join("");
+        return "<tr><td>Week of " + formatWeekLabel(p) + "</td>" + cells + "</tr>";
+      }).join("");
+      table.innerHTML = thead + "<tbody>" + tbodyHtml + "</tbody>";
+    } else {
+      compareWrap.hidden = true;
+    }
+  }
+
+  // ---------- Report interpretation rules (plain-language, rule-based) ----------
+  // Everything here is arithmetic over rows already in memory - no AI call,
+  // nothing leaves the browser. Kept in one block, with thresholds as named
+  // constants, so a future cohort can retune the wording or cutoffs without
+  // touching rendering, ingestion, or PDF layout code elsewhere in the file.
+  var INTERP_SHORT_HISTORY_WEEKS = 3; // below this many weeks loaded, flag trends as "still early"
+  var INTERP_TRAILING_WEEKS = 4; // how many prior weeks feed the CTR/conversion baseline
+  var INTERP_NOTABLE_MOVE_PCT = 25; // WoW %% change on a channel's reach worth calling out
+  var INTERP_MAX_NOTABLE_MOVERS = 2; // cap how many flagged channels make it into the sentence
+
+  function computeFunnelForWeek(week, channels) {
+    var reach = sumMetric(state.rows, week, channels, "reach");
+    var engagements = sumMetric(state.rows, week, channels, "engagements");
+    var clicks = sumMetric(state.rows, week, channels, "clicks");
+    var conversions = sumMetric(state.rows, week, channels, "conversions");
+    return {
+      reach: reach, engagements: engagements, clicks: clicks, conversions: conversions,
+      ctr: reach > 0 ? clicks / reach : null,
+      convRate: clicks > 0 ? conversions / clicks : null
+    };
+  }
+
+  function trailingAverage(weeks, channels, pick) {
+    var vals = weeks.map(function (w) { return pick(computeFunnelForWeek(w, channels)); }).filter(function (v) { return v !== null; });
+    if (!vals.length) return null;
+    return vals.reduce(function (a, b) { return a + b; }, 0) / vals.length;
+  }
+
+  function growthSentence(label, cur, prev) {
+    if (prev === 0) {
+      if (cur === 0) return label + " stayed flat at 0 this week.";
+      return label + " is new this week (" + fmt(cur) + ") with no prior week to compare.";
+    }
+    var diff = cur - prev, pct = Math.abs((diff / prev) * 100);
+    if (diff > 0) return label + " rose " + pct.toFixed(0) + "% from last week.";
+    if (diff < 0) return label + " fell " + pct.toFixed(0) + "% from last week.";
+    return label + " held steady week-over-week.";
+  }
+
+  // Returns an array of paragraph strings for the PDF's "What this means" section.
+  function buildInterpretation(week, channelSet) {
+    var paragraphs = [];
+    var idx = state.weeks.indexOf(week);
+    var prevWeek = idx > 0 ? state.weeks[idx - 1] : null;
+    var channels = Array.from(channelSet);
+
+    // Growth
+    var growthMetrics = [
+      { key: "reach", label: "Reach" },
+      { key: "engagements", label: "Engagement" },
+      { key: "followers", label: "Followers" },
+      { key: "conversions", label: "Sign-ups" }
+    ];
+    if (prevWeek) {
+      var growthSentences = growthMetrics.map(function (m) {
+        var cur = sumMetric(state.rows, week, channelSet, m.key);
+        var prev = sumMetric(state.rows, prevWeek, channelSet, m.key);
+        return growthSentence(m.label, cur, prev);
+      });
+      paragraphs.push(growthSentences.join(" "));
+    } else {
+      paragraphs.push("This is the earliest week in the loaded data, so there's no prior week to compare against yet.");
+    }
+    if (state.weeks.length < INTERP_SHORT_HISTORY_WEEKS) {
+      paragraphs.push("Only " + state.weeks.length + " week" + (state.weeks.length === 1 ? "" : "s") +
+        " of data " + (state.weeks.length === 1 ? "is" : "are") + " loaded so far, so week-over-week trends are still early.");
+    }
+
+    // Funnel bottleneck: compare each stage to the ONE BEFORE it (not to reach),
+    // so the bottleneck is the weakest conditional step, not always "engagement"
+    // just because everything looks small next to reach.
+    var f = computeFunnelForWeek(week, channelSet);
+    if (f.reach > 0) {
+      var transitions = [
+        { name: "Engagement", rate: f.reach > 0 ? f.engagements / f.reach : null },
+        { name: "Clicks", rate: f.engagements > 0 ? f.clicks / f.engagements : null },
+        { name: "Sign-ups", rate: f.clicks > 0 ? f.conversions / f.clicks : null }
+      ].filter(function (t) { return t.rate !== null; });
+      var worst = transitions.length ? transitions.reduce(function (a, b) { return b.rate < a.rate ? b : a; }) : null;
+      var stepLabel = worst ? (worst.name === "Sign-ups" ? "sign-up step" : worst.name === "Clicks" ? "click step" : "engagement step") : null;
+
+      var priorWeeks = state.weeks.slice(Math.max(0, idx - INTERP_TRAILING_WEEKS), idx);
+      var trailingCTR = trailingAverage(priorWeeks, channelSet, function (r) { return r.ctr; });
+      var trailingConv = trailingAverage(priorWeeks, channelSet, function (r) { return r.convRate; });
+
+      var sentence = stepLabel
+        ? ("This week's bottleneck is the " + stepLabel + " - it has the largest relative drop-off from the stage before it.")
+        : "There isn't enough stage-to-stage data this week to name a clear bottleneck.";
+      var bits = [];
+      if (f.ctr !== null) bits.push("click-through rate is " + (f.ctr * 100).toFixed(1) + "%" + (trailingCTR !== null ? " (trailing " + priorWeeks.length + "-week average " + (trailingCTR * 100).toFixed(1) + "%)" : ""));
+      if (f.convRate !== null) bits.push("conversion rate is " + (f.convRate * 100).toFixed(1) + "%" + (trailingConv !== null ? " (trailing average " + (trailingConv * 100).toFixed(1) + "%)" : ""));
+      if (bits.length) sentence += " This week's " + bits.join(" and ") + ".";
+      paragraphs.push(sentence);
+    } else {
+      paragraphs.push("No reach was recorded for the selected channels this week, so a funnel comparison isn't meaningful.");
+    }
+
+    // Channels
+    var channelRows = channels.map(function (ch) {
+      var single = new Set([ch]);
+      return {
+        channel: ch,
+        reach: sumMetric(state.rows, week, single, "reach"),
+        engagements: sumMetric(state.rows, week, single, "engagements"),
+        conversions: sumMetric(state.rows, week, single, "conversions")
+      };
+    });
+    var topReach = channelRows.slice().sort(function (a, b) { return b.reach - a.reach; })[0];
+    var topEngRate = channelRows.filter(function (c) { return c.reach > 0; })
+      .map(function (c) { return { channel: c.channel, rate: c.engagements / c.reach }; })
+      .sort(function (a, b) { return b.rate - a.rate; })[0];
+    var topSignups = channelRows.slice().sort(function (a, b) { return b.conversions - a.conversions; })[0];
+
+    var chBits = [];
+    if (topReach && topReach.reach > 0) chBits.push(topReach.channel + " led on reach");
+    if (topEngRate) chBits.push(topEngRate.channel + " had the strongest engagement rate");
+    if (topSignups && topSignups.conversions > 0) chBits.push(topSignups.channel + " produced the most sign-ups");
+    var channelSentence = chBits.length ? (chBits.join(", ") + " this week.") : "There was no channel activity to compare this week.";
+
+    if (prevWeek) {
+      var movers = channels.map(function (ch) {
+        var single = new Set([ch]);
+        var cur = sumMetric(state.rows, week, single, "reach");
+        var prev = sumMetric(state.rows, prevWeek, single, "reach");
+        if (prev <= 0) return null;
+        var pct = ((cur - prev) / prev) * 100;
+        return Math.abs(pct) >= INTERP_NOTABLE_MOVE_PCT ? { channel: ch, pct: pct } : null;
+      }).filter(Boolean).sort(function (a, b) { return Math.abs(b.pct) - Math.abs(a.pct); }).slice(0, INTERP_MAX_NOTABLE_MOVERS);
+      if (movers.length) {
+        channelSentence += " Notable moves: " + movers.map(function (m) {
+          return m.channel + " reach " + (m.pct > 0 ? "up" : "down") + " " + Math.abs(m.pct).toFixed(0) + "%";
+        }).join(", ") + ".";
+      }
+    }
+    paragraphs.push(channelSentence);
+
+    paragraphs.push("Note: reach is not de-duplicated across platforms, and these are observations drawn from the numbers above — not explanations of why they moved.");
+
+    return paragraphs;
+  }
+
+  // ---------- PDF report ----------
+  function generatePdfReport() {
+    if (!state.selectedWeek) { alert("No data loaded to report on."); return; }
+    if (typeof window.jspdf === "undefined") {
+      alert("PDF library failed to load (offline / CDN blocked). Try the offline build (index.offline.html).");
+      return;
+    }
+    var week = state.selectedWeek;
+    var channelSet = state.selectedChannels;
+    var activeChannels = state.channels.filter(function (ch) { return channelSet.has(ch); });
+
+    var doc = new window.jspdf.jsPDF({ unit: "pt", format: "letter" });
+    var pageW = doc.internal.pageSize.getWidth();
+    var pageH = doc.internal.pageSize.getHeight();
+    var margin = 40;
+    var contentW = pageW - margin * 2;
+    var y = margin;
+
+    // jsPDF's base "helvetica" font uses WinAnsi encoding, which covers em
+    // dashes and curly quotes but not arrows or triangles - swap those for
+    // ASCII equivalents so PDF text never mis-encodes.
+    function pdfSafeText(text) {
+      return String(text).replace(/▲\s*/g, "+").replace(/▼\s*/g, "-").replace(/→/g, "->");
+    }
+    function ensureSpace(needed) {
+      if (y + needed > pageH - margin) { doc.addPage(); y = margin; }
+    }
+    function heading(text, size) {
+      ensureSpace(size + 10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(size); doc.setTextColor(20, 20, 20);
+      doc.text(text, margin, y);
+      y += size + 8;
+    }
+    function bodyText(text, size, color) {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(size || 10);
+      doc.setTextColor(color ? color[0] : 60, color ? color[1] : 60, color ? color[2] : 60);
+      var lines = doc.splitTextToSize(text, contentW);
+      lines.forEach(function (line) {
+        ensureSpace((size || 10) + 4);
+        doc.text(line, margin, y);
+        y += (size || 10) + 4;
+      });
+    }
+
+    // Header
+    heading("Pulse — Weekly Report", 18);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(40, 40, 40);
+    doc.text("Week of " + formatWeekLabel(week), margin, y); y += 16;
+    doc.setFontSize(9); doc.setTextColor(120, 120, 120);
+    doc.text("Generated on " + new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }), margin, y); y += 10;
+    doc.text("Channels: " + (activeChannels.length ? activeChannels.join(", ") : "none selected"), margin, y); y += 18;
+
+    if (state.isSample) {
+      doc.setFillColor(250, 178, 25);
+      doc.rect(margin, y - 12, 110, 18, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(20, 20, 20);
+      doc.text("SAMPLE DATA", margin + 8, y + 1);
+      y += 22;
+    }
+
+    // KPIs
+    heading("Key numbers", 13);
+    var weekIdx = state.weeks.indexOf(week);
+    var prevWeek = weekIdx > 0 ? state.weeks[weekIdx - 1] : null;
+    METRICS.forEach(function (m) {
+      var cur = sumMetric(state.rows, week, channelSet, m.key);
+      var prev = prevWeek !== null ? sumMetric(state.rows, prevWeek, channelSet, m.key) : 0;
+      var delta = computeDelta(cur, prevWeek !== null, prev);
+      ensureSpace(14);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(30, 30, 30);
+      doc.text(m.label + ": " + fmt(cur), margin, y);
+      doc.setFontSize(9); doc.setTextColor(110, 110, 110);
+      doc.text(pdfSafeText(delta.text), margin + 220, y);
+      y += 16;
+    });
+    y += 8;
+
+    // Funnel
+    heading("Funnel - Reach -> Engagement -> Clicks -> Sign-ups", 13);
+    var f = computeFunnelForWeek(week, channelSet);
+    var stages = [
+      { name: "Reach", value: f.reach, pct: 100 },
+      { name: "Engagement", value: f.engagements, pct: f.reach > 0 ? (f.engagements / f.reach) * 100 : 0 },
+      { name: "Clicks", value: f.clicks, pct: f.reach > 0 ? (f.clicks / f.reach) * 100 : 0 },
+      { name: "Sign-ups", value: f.conversions, pct: f.reach > 0 ? (f.conversions / f.reach) * 100 : 0 }
+    ];
+    stages.forEach(function (s) {
+      ensureSpace(14);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(30, 30, 30);
+      doc.text(s.name + ": " + fmt(s.value) + " (" + s.pct.toFixed(1) + "% of reach)", margin, y);
+      y += 15;
+    });
+    ensureSpace(16);
+    doc.setFontSize(10.5);
+    doc.text("Click-through rate: " + (f.ctr !== null ? (f.ctr * 100).toFixed(2) + "%" : "—") +
+      "    Conversion rate: " + (f.convRate !== null ? (f.convRate * 100).toFixed(2) + "%" : "—"), margin, y);
+    y += 22;
+
+    // Growth chart image
+    if (chartInstance && document.getElementById("growthCanvas").hidden === false) {
+      try {
+        var canvas = document.getElementById("growthCanvas");
+        var imgData = canvas.toDataURL("image/png");
+        var imgW = contentW;
+        var imgH = imgW * (canvas.height / canvas.width);
+        ensureSpace(imgH + 24);
+        heading("Growth — " + METRICS.find(function (m) { return m.key === state.metric; }).label, 13);
+        doc.addImage(imgData, "PNG", margin, y, imgW, imgH);
+        y += imgH + 16;
+      } catch (e) {
+        console.error(e);
+        bodyText("Growth chart image unavailable.", 10);
+      }
+    } else {
+      heading("Growth", 13);
+      bodyText("Chart unavailable in this session (chart library failed to load). See the detail table below for the same numbers.", 10);
+      y += 6;
+    }
+
+    // Detail table
+    heading("Detail — by channel", 13);
+    var cols = [
+      { label: "Channel", x: margin, w: 130, align: "left" },
+      { label: "Reach", x: margin + 130, w: 65, align: "right" },
+      { label: "Engage.", x: margin + 195, w: 65, align: "right" },
+      { label: "Followers", x: margin + 260, w: 70, align: "right" },
+      { label: "Clicks", x: margin + 330, w: 65, align: "right" },
+      { label: "Sign-ups", x: margin + 395, w: 65, align: "right" }
+    ];
+    ensureSpace(16);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(90, 90, 90);
+    cols.forEach(function (c) { doc.text(c.label, c.x + (c.align === "right" ? c.w : 0), y, { align: c.align }); });
+    y += 6;
+    doc.setDrawColor(210, 210, 210);
+    doc.line(margin, y, margin + 460, y);
+    y += 12;
+
+    var totals = { reach: 0, engagements: 0, followers: 0, clicks: 0, conversions: 0 };
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(30, 30, 30);
+    activeChannels.forEach(function (ch) {
+      var row = state.rows.find(function (r) { return r.week === week && r.channel === ch; });
+      var vals = row || { reach: 0, engagements: 0, followers: 0, clicks: 0, conversions: 0 };
+      METRICS.forEach(function (m) { totals[m.key] += vals[m.key]; });
+      ensureSpace(14);
+      doc.text(ch, cols[0].x, y);
+      doc.text(fmt(vals.reach), cols[1].x + cols[1].w, y, { align: "right" });
+      doc.text(fmt(vals.engagements), cols[2].x + cols[2].w, y, { align: "right" });
+      doc.text(fmt(vals.followers), cols[3].x + cols[3].w, y, { align: "right" });
+      doc.text(fmt(vals.clicks), cols[4].x + cols[4].w, y, { align: "right" });
+      doc.text(fmt(vals.conversions), cols[5].x + cols[5].w, y, { align: "right" });
+      y += 14;
+    });
+    ensureSpace(16);
+    doc.setDrawColor(210, 210, 210);
+    doc.line(margin, y, margin + 460, y);
+    y += 12;
+    doc.setFont("helvetica", "bold");
+    doc.text("Total", cols[0].x, y);
+    doc.text(fmt(totals.reach), cols[1].x + cols[1].w, y, { align: "right" });
+    doc.text(fmt(totals.engagements), cols[2].x + cols[2].w, y, { align: "right" });
+    doc.text(fmt(totals.followers), cols[3].x + cols[3].w, y, { align: "right" });
+    doc.text(fmt(totals.clicks), cols[4].x + cols[4].w, y, { align: "right" });
+    doc.text(fmt(totals.conversions), cols[5].x + cols[5].w, y, { align: "right" });
+    y += 22;
+
+    // Interpretation
+    heading("What this means", 13);
+    bodyText("Plain-language read of the numbers above, generated locally by simple rules — not a causal analysis.", 9, [120, 120, 120]);
+    y += 4;
+    buildInterpretation(week, channelSet).forEach(function (para) { bodyText(para, 10.5); y += 4; });
+
+    // Footer on every page
+    var pageCount = doc.internal.getNumberOfPages();
+    for (var p = 1; p <= pageCount; p++) {
+      doc.setPage(p);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(140, 140, 140);
+      doc.text("This report contains aggregate counts only — no personal data. Generated entirely in your browser; nothing was uploaded.", margin, pageH - 20);
+      doc.text(String(p) + " / " + pageCount, pageW - margin, pageH - 20, { align: "right" });
+    }
+
+    doc.save("pulse-report-" + week + ".pdf");
+  }
+
+  // ---------- Ingest ----------
+  // Decodes a text file's bytes, sniffing a UTF-16LE/BE BOM (some platform
+  // exports - e.g. Meta's "Top content formats" - ship UTF-16 despite being
+  // .csv) and falling back to UTF-8 otherwise. Also strips a leading
+  // "sep=,"-style hint line, which is a display hint for Excel, not data.
+  function decodeTextBuffer(buf) {
+    var bytes = new Uint8Array(buf);
+    var text;
+    if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+      text = new TextDecoder("utf-16le").decode(buf);
+    } else if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+      text = new TextDecoder("utf-16be").decode(buf);
+    } else {
+      text = new TextDecoder("utf-8").decode(buf);
+    }
+    text = text.replace(/^﻿/, "");
+    var nl = text.indexOf("\n");
+    var firstLine = (nl === -1 ? text : text.slice(0, nl)).trim();
+    if (/^sep=/i.test(firstLine)) text = nl === -1 ? "" : text.slice(nl + 1);
+    return text;
+  }
+
+  // Excel/Meta "Top content formats" exports aren't a single header+rows grid -
+  // they're stacked mini-tables: a one-cell section label, a format-name header
+  // row, then a values row, repeated for Published content / Views / Content
+  // interactions. This scans decoded CSV text for that shape and merges the
+  // three sections into one record per format. Returns null (falls through to
+  // the normal grid pipeline) if the file doesn't structurally match.
+  var FORMAT_MIX_SECTIONS = { published_content: "published", views: "views", content_interactions: "interactions" };
+  function tryParseFormatMix(text) {
+    if (typeof Papa === "undefined") return null;
+    var rows = Papa.parse(text, { skipEmptyLines: true }).data || [];
+    var found = {};
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (!row || row.length !== 1) continue;
+      var metricKey = FORMAT_MIX_SECTIONS[normalizeHeader(row[0])];
+      if (!metricKey) continue;
+      var headerRow = rows[i + 1], valuesRow = rows[i + 2];
+      if (!headerRow || !valuesRow || !headerRow.length) continue;
+      found[metricKey] = { headers: headerRow, values: valuesRow };
+    }
+    if (Object.keys(found).length < 2) return null;
+
+    var formats = {};
+    Object.keys(found).forEach(function (metricKey) {
+      var sec = found[metricKey];
+      sec.headers.forEach(function (name, idx) {
+        name = String(name == null ? "" : name).trim();
+        if (!name) return;
+        if (!formats[name]) formats[name] = { format: name, published: 0, views: 0, interactions: 0 };
+        formats[name][metricKey] = toNumber(sec.values[idx]);
+      });
+    });
+    var list = Object.keys(formats).map(function (k) { return formats[k]; });
+    return list.length ? list : null;
+  }
+
+  // Reads and classifies one file. Excel .xlsx/.xls (via SheetJS, first
+  // sheet) and ordinary CSV/TSV (via PapaParse, auto-detected delimiter)
+  // become { kind: "grid", rows } - row objects keyed by source header,
+  // matching PapaParse's header:true shape. A Format Mix export (stacked
+  // mini-tables, no header row) becomes { kind: "formatMix", rows }.
+  async function readFile(file) {
+    if (/\.(xlsx|xls)$/i.test(file.name)) {
+      if (typeof XLSX === "undefined") throw new Error("Spreadsheet library unavailable");
+      var buf = await file.arrayBuffer();
+      var wb = XLSX.read(buf, { type: "array", cellDates: true });
+      var sheet = wb.Sheets[wb.SheetNames[0]];
+      return { kind: "grid", rows: XLSX.utils.sheet_to_json(sheet, { defval: "" }) };
+    }
+    if (typeof Papa === "undefined") throw new Error("CSV/TSV parser unavailable");
+    var text = decodeTextBuffer(await file.arrayBuffer());
+    var formatMixRows = tryParseFormatMix(text);
+    if (formatMixRows) return { kind: "formatMix", rows: formatMixRows };
+    return { kind: "grid", rows: Papa.parse(text, { header: true, skipEmptyLines: true }).data || [] };
+  }
+
+  // Manual-mapping fallback: shown when a file matches neither the canonical
+  // schema nor any platform adapter. Session-only - nothing here is stored.
+  // Resolves to an array of pre-aggregation rows, or null if the user skips.
+  function openMappingModal(item) {
+    return new Promise(function (resolve) {
+      var headers = item.headers;
+
+      function guessColumn(aliasList) {
+        return headers.find(function (h) { return aliasList.indexOf(normalizeHeader(h)) !== -1; }) || "";
+      }
+      function makeSelect(id, noneLabel, selectedGuess) {
+        var select = document.createElement("select");
+        select.id = id;
+        var noneOpt = document.createElement("option");
+        noneOpt.value = "";
+        noneOpt.textContent = noneLabel;
+        select.appendChild(noneOpt);
+        headers.forEach(function (h) {
+          var opt = document.createElement("option");
+          opt.value = h;
+          opt.textContent = h;
+          if (h === selectedGuess) opt.selected = true;
+          select.appendChild(opt);
+        });
+        return select;
+      }
+
+      var overlay = document.createElement("div");
+      overlay.className = "mapping-overlay";
+      overlay.setAttribute("role", "dialog");
+      overlay.setAttribute("aria-modal", "true");
+      overlay.setAttribute("aria-label", "Map columns for " + item.file.name);
+
+      var panel = document.createElement("div");
+      panel.className = "mapping-panel";
+      overlay.appendChild(panel);
+
+      var h3 = document.createElement("h3");
+      h3.textContent = "Unrecognized format: " + item.file.name;
+      panel.appendChild(h3);
+
+      var help = document.createElement("p");
+      help.className = "mapping-help";
+      help.textContent = "This file didn't match the canonical schema or a known platform export. Match its columns to the fields below, or skip it - nothing here is saved.";
+      panel.appendChild(help);
+
+      var grid = document.createElement("div");
+      grid.className = "mapping-grid";
+      panel.appendChild(grid);
+
+      function addRow(labelText, selectEl, fixedInputEl) {
+        var row = document.createElement("div");
+        row.className = "mapping-row";
+        var label = document.createElement("label");
+        label.textContent = labelText;
+        label.htmlFor = selectEl.id;
+        row.appendChild(label);
+        row.appendChild(selectEl);
+        if (fixedInputEl) row.appendChild(fixedInputEl);
+        grid.appendChild(row);
+        return row;
+      }
+
+      var weekSelect = makeSelect("map_week_col", "— none (enter one date for the whole file) —", guessColumn(CANONICAL_ALIASES.week));
+      var weekFixed = document.createElement("input");
+      weekFixed.type = "date";
+      weekFixed.id = "map_week_fixed";
+      weekFixed.hidden = !!weekSelect.value;
+      addRow("Week / date column", weekSelect, weekFixed);
+      weekSelect.addEventListener("change", function () { weekFixed.hidden = !!weekSelect.value; });
+
+      var chSelect = makeSelect("map_channel_col", "— none (type one channel for the whole file) —", guessColumn(CANONICAL_ALIASES.channel));
+      var chFixed = document.createElement("input");
+      chFixed.type = "text";
+      chFixed.id = "map_channel_fixed";
+      chFixed.placeholder = "e.g. Instagram";
+      chFixed.hidden = !!chSelect.value;
+      addRow("Channel column", chSelect, chFixed);
+      chSelect.addEventListener("change", function () { chFixed.hidden = !!chSelect.value; });
+
+      var metricFieldDefs = [
+        { key: "reach", label: "Reach", aliases: CANONICAL_ALIASES.reach },
+        { key: "impressions", label: "Impressions", aliases: CANONICAL_ALIASES.impressions },
+        { key: "engagements", label: "Engagement", aliases: CANONICAL_ALIASES.engagements },
+        { key: "followers", label: "Followers", aliases: CANONICAL_ALIASES.followers },
+        { key: "clicks", label: "Clicks", aliases: CANONICAL_ALIASES.clicks },
+        { key: "conversions", label: "Sign-ups / conversions", aliases: CANONICAL_ALIASES.conversions }
+      ];
+      var metricSelects = {};
+      metricFieldDefs.forEach(function (f) {
+        var select = makeSelect("map_" + f.key, "— not in this file —", guessColumn(f.aliases));
+        addRow(f.label, select);
+        metricSelects[f.key] = select;
+      });
+
+      var btnRow = document.createElement("div");
+      btnRow.className = "btn-row";
+      btnRow.style.marginTop = "14px";
+      var applyBtn = document.createElement("button");
+      applyBtn.type = "button"; applyBtn.className = "btn-primary"; applyBtn.textContent = "Use this mapping";
+      var skipBtn = document.createElement("button");
+      skipBtn.type = "button"; skipBtn.textContent = "Skip this file";
+      btnRow.appendChild(applyBtn);
+      btnRow.appendChild(skipBtn);
+      panel.appendChild(btnRow);
+
+      document.body.appendChild(overlay);
+      applyBtn.focus();
+
+      function cleanup() { document.body.removeChild(overlay); document.removeEventListener("keydown", onKeydown); }
+      function onKeydown(e) { if (e.key === "Escape") { cleanup(); resolve(null); } }
+      document.addEventListener("keydown", onKeydown);
+
+      overlay.addEventListener("click", function (e) { if (e.target === overlay) { cleanup(); resolve(null); } });
+      skipBtn.addEventListener("click", function () { cleanup(); resolve(null); });
+
+      applyBtn.addEventListener("click", function () {
+        var weekCol = weekSelect.value, fixedWeek = weekFixed.value;
+        if (!weekCol && !fixedWeek) { weekFixed.hidden = false; weekFixed.focus(); return; }
+        var chCol = chSelect.value, fixedChannel = chFixed.value.trim();
+        if (!chCol && !fixedChannel) { chFixed.hidden = false; chFixed.focus(); return; }
+
+        var aliasToField = {};
+        if (weekCol) aliasToField[normalizeHeader(weekCol)] = "date";
+        if (chCol) aliasToField[normalizeHeader(chCol)] = "channel";
+        metricFieldDefs.forEach(function (f) {
+          var col = metricSelects[f.key].value;
+          if (col) aliasToField[normalizeHeader(col)] = f.key;
+        });
+
+        var rows = item.rawRows.map(function (raw) {
+          var mapped = mapRow(raw, aliasToField);
+          var dateValue = weekCol ? mapped.date : fixedWeek;
+          var channelValue = chCol ? mapped.channel : fixedChannel;
+          return buildPreAggRow(mapped, channelValue, dateValue);
+        }).filter(Boolean);
+
+        cleanup();
+        resolve(rows);
+      });
+    });
+  }
+
+  // Format Mix exports ("Top content formats") carry no date at all, so the
+  // operator tags each import with the week it covers - reusing the same
+  // date-picker pattern as the manual-mapping week field. Session-only.
+  // Resolves to an ISO week-Monday string, or null if skipped.
+  function openPeriodPickerModal(filename) {
+    return new Promise(function (resolve) {
+      var overlay = document.createElement("div");
+      overlay.className = "mapping-overlay";
+      overlay.setAttribute("role", "dialog");
+      overlay.setAttribute("aria-modal", "true");
+      overlay.setAttribute("aria-label", "Tag period for " + filename);
+
+      var panel = document.createElement("div");
+      panel.className = "mapping-panel";
+      overlay.appendChild(panel);
+
+      var h3 = document.createElement("h3");
+      h3.textContent = "Tag period: " + filename;
+      panel.appendChild(h3);
+
+      var help = document.createElement("p");
+      help.className = "mapping-help";
+      help.textContent = "This looks like a Meta/Instagram “Top content formats” export - a content-format breakdown, not a dated time series. It has no date column, so pick the week it covers. Retagging a file to a week already loaded replaces that week's format mix.";
+      panel.appendChild(help);
+
+      var grid = document.createElement("div");
+      grid.className = "mapping-grid";
+      panel.appendChild(grid);
+
+      var row = document.createElement("div");
+      row.className = "mapping-row";
+      var label = document.createElement("label");
+      label.textContent = "Week this export covers";
+      label.htmlFor = "period_week";
+      var input = document.createElement("input");
+      input.type = "date";
+      input.id = "period_week";
+      row.appendChild(label);
+      row.appendChild(input);
+      grid.appendChild(row);
+
+      var btnRow = document.createElement("div");
+      btnRow.className = "btn-row";
+      btnRow.style.marginTop = "14px";
+      var applyBtn = document.createElement("button");
+      applyBtn.type = "button"; applyBtn.className = "btn-primary"; applyBtn.textContent = "Use this period";
+      var skipBtn = document.createElement("button");
+      skipBtn.type = "button"; skipBtn.textContent = "Skip this file";
+      btnRow.appendChild(applyBtn);
+      btnRow.appendChild(skipBtn);
+      panel.appendChild(btnRow);
+
+      document.body.appendChild(overlay);
+      input.focus();
+
+      function cleanup() { document.body.removeChild(overlay); document.removeEventListener("keydown", onKeydown); }
+      function onKeydown(e) { if (e.key === "Escape") { cleanup(); resolve(null); } }
+      document.addEventListener("keydown", onKeydown);
+      overlay.addEventListener("click", function (e) { if (e.target === overlay) { cleanup(); resolve(null); } });
+      skipBtn.addEventListener("click", function () { cleanup(); resolve(null); });
+
+      applyBtn.addEventListener("click", function () {
+        if (!input.value) { input.focus(); return; }
+        var d = parseAnyDate(input.value);
+        var period = d ? isoWeekMondayString(d) : null;
+        cleanup();
+        resolve(period);
+      });
+    });
+  }
+
+  // Orchestrates a drop/selection of one or more files: canonical schema,
+  // known platform exports, and Format Mix exports are all handled
+  // automatically; anything else falls to the manual-mapping modal (one at
+  // a time) rather than failing the batch. Growth/funnel data is combined
+  // and reshaped to weekly in one final pass; Format Mix data is entirely
+  // separate and never feeds that pass, so it can never invent funnel numbers.
+  async function handleFiles(fileList) {
+    var files = Array.prototype.filter.call(fileList, function (f) { return /\.(csv|tsv|xlsx|xls)$/i.test(f.name); });
+    if (!files.length) return;
+
+    var needsPapa = files.some(function (f) { return /\.(csv|tsv)$/i.test(f.name); }) && typeof Papa === "undefined";
+    var needsXlsx = files.some(function (f) { return /\.(xlsx|xls)$/i.test(f.name); }) && typeof XLSX === "undefined";
+    if (needsPapa || needsXlsx) {
+      alert("A required file parser failed to load (offline / CDN blocked). Try the offline build (index.offline.html).");
+      return;
+    }
+
+    var preAggRows = [];
+    var failures = [];
+    var formatMixTouched = false;
+
+    for (var i = 0; i < files.length; i++) {
+      var file = files[i];
+      var result;
+      try {
+        result = await readFile(file);
+      } catch (e) {
+        console.error(e);
+        failures.push(file.name);
+        continue;
+      }
+
+      if (result.kind === "formatMix") {
+        var period = await openPeriodPickerModal(file.name);
+        if (period) { upsertFormatMix(period, result.rows); formatMixTouched = true; }
+        continue;
+      }
+
+      var rawRows = result.rows;
+      if (!rawRows || !rawRows.length) continue;
+
+      var headers = Object.keys(rawRows[0]);
+      var normSet = new Set(headers.map(normalizeHeader));
+
+      if (looksCanonical(normSet)) {
+        preAggRows = preAggRows.concat(normalizeCanonicalRows(rawRows));
+        continue;
+      }
+      var adapter = detectAdapter(headers, file.name);
+      if (adapter) {
+        preAggRows = preAggRows.concat(runAdapter(adapter, rawRows));
+        continue;
+      }
+      var mappedRows = await openMappingModal({ file: file, rawRows: rawRows, headers: headers });
+      if (mappedRows) preAggRows = preAggRows.concat(mappedRows);
+    }
+
+    if (failures.length) alert("Could not read: " + failures.join(", ") + ". Other files were still processed.");
+    if (preAggRows.length) {
+      loadRows(aggregateToWeek(preAggRows), false);
+    } else if (formatMixTouched) {
+      renderAll();
+    }
+  }
+
+  function downloadTemplate() {
+    var blob = new Blob([TEMPLATE_CSV], { type: "text/csv" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "comms_template.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  // ---------- Theme ----------
+  var themeState = "system";
+  function applyTheme() {
+    var root = document.documentElement;
+    if (themeState === "system") root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", themeState);
+    document.getElementById("themeLabel").textContent = themeState.charAt(0).toUpperCase() + themeState.slice(1);
+    renderAll();
+  }
+  document.getElementById("themeToggle").addEventListener("click", function () {
+    themeState = themeState === "system" ? "light" : themeState === "light" ? "dark" : "system";
+    applyTheme();
+  });
+
+  // ---------- Wire up ----------
+  var dropzone = document.getElementById("dropzone");
+  var fileInput = document.getElementById("fileInput");
+  fileInput.addEventListener("change", function () { handleFiles(fileInput.files); fileInput.value = ""; });
+  ["dragenter", "dragover"].forEach(function (evt) {
+    dropzone.addEventListener(evt, function (e) { e.preventDefault(); dropzone.classList.add("drag-over"); });
+  });
+  ["dragleave", "drop"].forEach(function (evt) {
+    dropzone.addEventListener(evt, function (e) { e.preventDefault(); dropzone.classList.remove("drag-over"); });
+  });
+  dropzone.addEventListener("drop", function (e) {
+    if (e.dataTransfer && e.dataTransfer.files) handleFiles(e.dataTransfer.files);
+  });
+
+  document.getElementById("templateBtn").addEventListener("click", downloadTemplate);
+  document.getElementById("pdfReportBtn").addEventListener("click", generatePdfReport);
+  ["reloadSampleBtn", "reloadSampleBtn2"].forEach(function (id) {
+    document.getElementById(id).addEventListener("click", function () { loadRows(generateSampleData(), true); });
+  });
+  ["clearBtn", "clearBtn2"].forEach(function (id) {
+    document.getElementById(id).addEventListener("click", function () { loadRows([], false); });
+  });
+
+  if (window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+      if (themeState === "system") renderAll();
+    });
+  }
+
+  // ---------- Init ----------
+  loadRows(generateSampleData(), true);
+})();
+</script>
+</body>
+</html>
