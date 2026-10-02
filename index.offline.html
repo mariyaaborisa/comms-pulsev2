@@ -1082,6 +1082,27 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return isNaN(n) ? 0 : n;
   }
   function isBlank(v) { return v === undefined || v === null || String(v).trim() === ""; }
+
+  // Escapes a value for safe insertion into innerHTML. Any user-entered or
+  // imported string (action notes, outcome descriptions, campaign/action/
+  // outcome fields, study findings) must go through this before it reaches
+  // an innerHTML sink - study files are explicitly designed to be handed
+  // from one person to another (see README), so their contents are
+  // untrusted input, not just data the current user typed themselves.
+  function escapeHtml(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+  // Only http(s) URLs are safe to use as a clickable link's href - rejects
+  // javascript:, data:, and other schemes that would execute on click.
+  function isSafeHttpUrl(v) {
+    if (isBlank(v)) return false;
+    return /^https?:\/\//i.test(String(v).trim());
+  }
   function formatWeekLabel(iso) {
     var d = new Date(iso + "T00:00:00Z");
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -2025,7 +2046,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     empty.hidden = true;
     actions.forEach(function (a) {
       var tr = document.createElement("tr");
-      tr.innerHTML = "<td>" + a.date + "</td><td>" + a.type + "</td><td>" + (a.channel || "—") + "</td><td>" + a.audience + "</td><td>" + (a.note || "") + "</td><td></td>";
+      tr.innerHTML = "<td>" + escapeHtml(a.date) + "</td><td>" + escapeHtml(a.type) + "</td><td>" + escapeHtml(a.channel || "—") + "</td><td>" + escapeHtml(a.audience) + "</td><td>" + escapeHtml(a.note || "") + "</td><td></td>";
       var delBtn = document.createElement("button");
       delBtn.type = "button";
       delBtn.textContent = "Remove";
@@ -2062,8 +2083,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     empty.hidden = true;
     state.outcomes.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).forEach(function (o) {
       var tr = document.createElement("tr");
-      var evidence = o.evidenceLink ? '<a href="' + o.evidenceLink + '" target="_blank" rel="noopener">link</a>' : "—";
-      tr.innerHTML = "<td>" + o.date + "</td><td>" + o.group + "</td><td>" + o.description + "</td><td>" + evidence + "</td><td></td>";
+      tr.innerHTML = "<td>" + escapeHtml(o.date) + "</td><td>" + escapeHtml(o.group) + "</td><td>" + escapeHtml(o.description) + "</td><td></td><td></td>";
+      var evidenceCell = tr.children[3];
+      if (isSafeHttpUrl(o.evidenceLink)) {
+        var link = document.createElement("a");
+        link.href = o.evidenceLink; // DOM property assignment, not string concatenation into an attribute
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = "link";
+        evidenceCell.appendChild(link);
+      } else {
+        evidenceCell.textContent = "—";
+      }
       var delBtn = document.createElement("button");
       delBtn.type = "button";
       delBtn.textContent = "Remove";
@@ -2150,7 +2181,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       var row = document.createElement("div");
       row.className = "finding-row";
       var typeLabel = f.type === "observed" ? "Observed" : f.type === "associated" ? "Associated" : "Not testable";
-      row.innerHTML = '<div class="finding-type">' + typeLabel + (f.week ? " · week of " + f.week : "") + '</div>';
+      row.innerHTML = '<div class="finding-type">' + typeLabel + (f.week ? " · week of " + escapeHtml(f.week) : "") + '</div>';
       var textarea = document.createElement("textarea");
       textarea.value = state.study.findingsEdited[f.id] != null ? state.study.findingsEdited[f.id] : f.text;
       textarea.addEventListener("change", function () { state.study.findingsEdited[f.id] = textarea.value; });
