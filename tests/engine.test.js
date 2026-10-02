@@ -32,7 +32,7 @@ function extractEngineBlock() {
 
 var EXPORTS = [
   "buildAliasToField", "CANONICAL_ALIASES", "CANONICAL_ALIAS_TO_FIELD", "METRICS", "OUTCOME_FIELD_OPTIONS", "TEMPLATE_CSV",
-  "normalizeHeader", "toNumber", "isBlank", "formatWeekLabel", "fmt",
+  "normalizeHeader", "toNumber", "isBlank", "escapeHtml", "isSafeHttpUrl", "formatWeekLabel", "fmt",
   "parseAnyDate", "isoWeekMondayString", "mapRow", "buildPreAggRow", "normalizeCanonicalRows",
   "aggregateToWeek", "looksCanonical", "ADAPTERS", "ADAPTER_MATCH_THRESHOLD", "detectAdapter",
   "runAdapter", "generateSampleData", "sumMetric", "growthSentence", "decodeTextBuffer",
@@ -87,6 +87,25 @@ test("isBlank treats null/undefined/whitespace as blank", function () {
   assert.equal(engine.isBlank(undefined), true);
   assert.equal(engine.isBlank("   "), true);
   assert.equal(engine.isBlank("0"), false);
+});
+
+// ---- escapeHtml / isSafeHttpUrl (XSS fixes) ----
+test("escapeHtml neutralizes the five HTML-significant characters", function () {
+  assert.equal(engine.escapeHtml(`<img src=x onerror=alert(1)>`), "&lt;img src=x onerror=alert(1)&gt;");
+  assert.equal(engine.escapeHtml(`" onmouseover="alert(1)`), "&quot; onmouseover=&quot;alert(1)");
+  assert.equal(engine.escapeHtml(`it's "quoted" & <tagged>`), "it&#39;s &quot;quoted&quot; &amp; &lt;tagged&gt;");
+});
+test("escapeHtml treats null/undefined as empty string", function () {
+  assert.equal(engine.escapeHtml(null), "");
+  assert.equal(engine.escapeHtml(undefined), "");
+});
+test("isSafeHttpUrl accepts only http(s) URLs, rejecting javascript: and other schemes", function () {
+  assert.equal(engine.isSafeHttpUrl("https://example.com/evidence"), true);
+  assert.equal(engine.isSafeHttpUrl("http://example.com"), true);
+  assert.equal(engine.isSafeHttpUrl("javascript:alert(document.domain)"), false);
+  assert.equal(engine.isSafeHttpUrl("data:text/html,<script>alert(1)</script>"), false);
+  assert.equal(engine.isSafeHttpUrl(""), false);
+  assert.equal(engine.isSafeHttpUrl(null), false);
 });
 
 // ---- parseAnyDate / isoWeekMondayString ----
