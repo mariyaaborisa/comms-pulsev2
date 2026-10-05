@@ -12,7 +12,7 @@
     --page: #f9f9f7;
     --text-primary: #0b0b0b;
     --text-secondary: #52514e;
-    --text-muted: #898781;
+    --text-muted: #74736e;
     --gridline: #e1e0d9;
     --baseline: #c3c2b7;
     --border: rgba(11,11,11,0.10);
@@ -21,7 +21,12 @@
     --warning: #fab219;
     --serious: #ec835a;
     --critical: #d03b3b;
-    --series-1: #2a78d6;
+    --series-1: #2974d0;
+    /* Darkened from the chart/chip --series-1 so white button text and
+       default link text both clear WCAG AA (4.5:1) - see --btn-primary-bg
+       below for the separate dark-mode shade. Used by .btn-primary and the
+       selected metric-tab, both white text on a filled background. */
+    --btn-primary-bg: #2974d0;
     --series-2: #eb6834;
     --series-3: #1baf7a;
     --series-4: #eda100;
@@ -33,7 +38,7 @@
     --seq-400: #3987e5;
     --seq-500: #256abf;
     --seq-600: #184f95;
-    --focus-ring: #2a78d6;
+    --focus-ring: #2974d0;
     --font-heading: system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
   }
@@ -49,7 +54,15 @@
       --baseline: #383835;
       --border: rgba(255,255,255,0.10);
       --good-text: #0ca30c;
+      /* Lightened from the light-theme --critical so red delta/error text
+         clears 4.5:1 against this theme's near-black surface. */
+      --critical: #d85a5a;
       --series-1: #3987e5;
+      /* Darker than --series-1 so white button text clears 4.5:1 - the
+         brighter --series-1 stays for links/chart/dots/focus ring, which
+         only need contrast as text/graphics against the dark surface,
+         already well above threshold at the brighter shade. */
+      --btn-primary-bg: #3277ca;
       --series-2: #d95926;
       --series-3: #199e70;
       --series-4: #c98500;
@@ -71,7 +84,9 @@
     --baseline: #383835;
     --border: rgba(255,255,255,0.10);
     --good-text: #0ca30c;
+    --critical: #d85a5a;
     --series-1: #3987e5;
+    --btn-primary-bg: #3277ca;
     --series-2: #d95926;
     --series-3: #199e70;
     --series-4: #c98500;
@@ -83,6 +98,7 @@
   }
 
   * { box-sizing: border-box; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   html, body {
     margin: 0;
     background: var(--page);
@@ -109,7 +125,7 @@
   button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
     outline: 2px solid var(--focus-ring); outline-offset: 2px;
   }
-  .btn-primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  .btn-primary { background: var(--btn-primary-bg); border-color: var(--btn-primary-bg); color: #fff; }
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
   section.card {
@@ -117,6 +133,10 @@
     padding: 16px; margin-bottom: 16px;
   }
   .card h2 { font-size: 15px; letter-spacing: 0.02em; color: var(--text-secondary); font-weight: 600; }
+
+  .legacy-divider { border-top: 1px solid var(--gridline); margin: 28px 0 16px; padding-top: 16px; }
+  .legacy-divider h2 { font-size: 16px; margin: 0 0 4px; }
+  .legacy-divider p { color: var(--text-secondary); font-size: 13px; margin: 0; }
 
   #dropzone {
     border: 2px dashed var(--baseline); border-radius: 10px; padding: 20px;
@@ -157,7 +177,7 @@
 
   .tablist { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; }
   .tablist button { padding: 6px 12px; font-size: 13px; border-radius: 999px; }
-  .tablist button[aria-selected="true"] { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  .tablist button[aria-selected="true"] { background: var(--btn-primary-bg); border-color: var(--btn-primary-bg); color: #fff; }
 
   .chart-shell { position: relative; height: 280px; }
   .chart-fallback { color: var(--text-muted); font-size: 14px; padding: 40px 0; text-align: center; }
@@ -266,6 +286,7 @@
     <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme">🌓 Theme: <span id="themeLabel">System</span></button>
   </header>
 
+  <main>
   <div id="sampleBanner" hidden>
     <span>📊 <strong>Showing sample data.</strong> Upload your own CSVs to replace it.</span>
     <div class="btn-row">
@@ -382,7 +403,7 @@
     </form>
     <div class="table-scroll" style="margin-top:14px;">
       <table class="detail" id="actionTable">
-        <thead><tr><th>Date</th><th>Type</th><th>Channel</th><th>Audience</th><th>Note</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Type</th><th>Channel</th><th>Audience</th><th>Note</th><th><span class="sr-only">Actions</span></th></tr></thead>
         <tbody id="actionTableBody"></tbody>
       </table>
     </div>
@@ -437,15 +458,17 @@
     </form>
     <div class="table-scroll" style="margin-top:14px;">
       <table class="detail" id="outcomeTable">
-        <thead><tr><th>Date</th><th>Group</th><th>Description</th><th>Evidence</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Group</th><th>Description</th><th>Evidence</th><th><span class="sr-only">Actions</span></th></tr></thead>
         <tbody id="outcomeTableBody"></tbody>
       </table>
     </div>
     <div id="outcomeEmpty" class="empty-state" hidden>No outcomes logged yet.</div>
   </section>
 
-  <h2 style="margin: 24px 0 4px; font-size:16px;">Legacy views</h2>
-  <p style="color: var(--text-secondary); font-size: 13px; margin: 0 0 12px;">The Pulse v1 dashboard, unchanged, kept below while the campaign-study flow above is verified.</p>
+  <section class="legacy-divider" aria-labelledby="legacyViewsHeading">
+    <h2 id="legacyViewsHeading">Legacy views</h2>
+    <p>The Pulse v1 dashboard, unchanged, kept below while the campaign-study flow above is verified.</p>
+  </section>
 
   <section class="card" id="filters">
     <h2>Filters</h2>
@@ -542,6 +565,7 @@
     </div>
   </section>
 
+  </main>
 </div>
 
 <!-- CDLS-BUILD:LIBS-START -->
@@ -2183,6 +2207,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       var typeLabel = f.type === "observed" ? "Observed" : f.type === "associated" ? "Associated" : "Not testable";
       row.innerHTML = '<div class="finding-type">' + typeLabel + (f.week ? " · week of " + escapeHtml(f.week) : "") + '</div>';
       var textarea = document.createElement("textarea");
+      textarea.setAttribute("aria-label", typeLabel + " finding" + (f.week ? ", week of " + f.week : "") + " - editable text");
       textarea.value = state.study.findingsEdited[f.id] != null ? state.study.findingsEdited[f.id] : f.text;
       textarea.addEventListener("change", function () { state.study.findingsEdited[f.id] = textarea.value; });
       row.appendChild(textarea);
