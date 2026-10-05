@@ -486,7 +486,7 @@ test("validateStudyFile accepts schemaVersion 1", function () {
 test("validateStudyFile rejects an unknown schema version with a plain-language message (no 'schema version' jargon)", function () {
   var result = engine.validateStudyFile({ schemaVersion: 2 });
   assert.equal(result.valid, false);
-  assert.match(result.error, /different version of Pulse/);
+  assert.match(result.error, /different version of Comms Analytics Study/);
   assert.doesNotMatch(result.error, /schema/i);
 });
 test("validateStudyFile rejects non-object input", function () {

@@ -1,13 +1,14 @@
-# Pulse 
+# Comms Analytics Study
 
-A CDLS impact analysis internal tool. Reports weekly metrics (v1) and,
-since Pulse v2, tells you whether a specific campaign worked toward its
-goal, what seems to have contributed, and what you can't see.
+A CDLS impact analysis internal tool. Reports weekly metrics and tells
+you whether a specific campaign worked toward its goal, what seems to
+have contributed, and what you can't see.
 
-Forked from [Pulser](https://github.com/mariyaaborisa/fictional-funicular)
-(Pulse v1), the CDLS weekly communications dashboard. Same architecture
-throughout: one HTML file, no build step, no server, no accounts, nothing
-stored. Refresh the page and you're back to sample data.
+Forked from [Pulser](https://github.com/mariyaaborisa/fictional-funicular),
+the CDLS weekly communications dashboard this app's weekly-metrics view
+was originally built from. Same architecture throughout: one HTML file,
+no build step, no server, no accounts, nothing stored. Refresh the page
+and you're back to sample data.
 
 ## What it is
 
@@ -28,12 +29,12 @@ stored. Refresh the page and you're back to sample data.
   read past detection, on every ingestion path including the campaign
   action log.
 
-## The campaign study (Pulse v2)
+## The campaign study
 
-Pulse v1 answers "how are we doing" (reach, clicks, conversions, by
-channel, by week). Pulse v2 answers a different question for one
-specific campaign: **did it work, what seems to have contributed, and
-what could we not see.**
+The weekly metrics view answers "how are we doing" (reach, clicks,
+conversions, by channel, by week). The campaign study answers a
+different question for one specific campaign: **did it work, what seems
+to have contributed, and what could we not see.**
 
 The workflow, top to bottom on the page:
 
@@ -184,7 +185,7 @@ its current owner. A few things worth knowing before you touch it:
 ## Repository layout
 
 ```
-turbo-telegram/
+comms-pulsev2/
 ├── index.html              # the app (CDN version)
 ├── index.offline.html      # the app with libraries built in (no network calls)
 ├── scripts/
