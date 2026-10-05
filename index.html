@@ -104,6 +104,13 @@
     background: var(--page);
     color: var(--text-primary);
     font-family: var(--font-body);
+    /* table.detail has a min-width (so columns stay readable) and relies
+       on its .table-scroll wrapper's own horizontal scrollbar to contain
+       that width. The wrapper does contain it visually, but on narrow
+       viewports the wide table still inflates the whole page's scrollable
+       area, making the entire layout pannable left/right on touch - this
+       stops that without affecting the wrapper's own intentional scroll. */
+    overflow-x: hidden;
   }
   body { padding: 16px; padding-bottom: 48px; }
   a { color: var(--series-1); }
@@ -347,8 +354,8 @@
           <input type="number" id="cg_baselinePerWeek" min="0" step="0.1" placeholder="pre-launch rate, if known">
         </div>
         <div class="field">
-          <label for="cg_owner">Owner (role or name, no contact info)</label>
-          <input type="text" id="cg_owner" placeholder="e.g. Comms lead">
+          <label for="cg_owner">Owner</label>
+          <input type="text" id="cg_owner" placeholder="e.g. Comms lead (role or name, no contact info)">
         </div>
         <div class="field">
           <label for="cg_group">CDLS group</label>
