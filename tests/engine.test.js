@@ -483,10 +483,11 @@ test("buildFindings never states a percentage when the underlying baseline is un
 test("validateStudyFile accepts schemaVersion 1", function () {
   assert.equal(engine.validateStudyFile({ schemaVersion: 1, campaign: null }).valid, true);
 });
-test("validateStudyFile rejects an unknown schema version with a plain-language message", function () {
+test("validateStudyFile rejects an unknown schema version with a plain-language message (no 'schema version' jargon)", function () {
   var result = engine.validateStudyFile({ schemaVersion: 2 });
   assert.equal(result.valid, false);
-  assert.match(result.error, /schema version/);
+  assert.match(result.error, /different version of Pulse/);
+  assert.doesNotMatch(result.error, /schema/i);
 });
 test("validateStudyFile rejects non-object input", function () {
   assert.equal(engine.validateStudyFile(null).valid, false);

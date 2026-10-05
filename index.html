@@ -327,7 +327,7 @@
           <input type="text" id="cg_outcomeLabel" placeholder="e.g. Completed second-stage applications">
         </div>
         <div class="field">
-          <label for="cg_outcomeField">Which uploaded field is that?</label>
+          <label for="cg_outcomeField">Which number tracks it?</label>
           <select id="cg_outcomeField"></select>
         </div>
         <div class="field">
@@ -355,12 +355,12 @@
           <input type="text" id="cg_group" placeholder="e.g. VSTEM">
         </div>
         <div class="field">
-          <label for="cg_rateNumeratorField">Secondary rate — numerator (optional)</label>
-          <select id="cg_rateNumeratorField"><option value="">— none —</option></select>
+          <label for="cg_rateNumeratorField">Also track a rate? Count this (optional)</label>
+          <select id="cg_rateNumeratorField"><option value="">- none -</option></select>
         </div>
         <div class="field">
-          <label for="cg_rateDenominatorField">Secondary rate — denominator</label>
-          <select id="cg_rateDenominatorField"><option value="">— none —</option></select>
+          <label for="cg_rateDenominatorField">...out of this</label>
+          <select id="cg_rateDenominatorField"><option value="">- none -</option></select>
         </div>
       </div>
       <p id="campaignFormErrors" class="form-errors" hidden></p>
@@ -372,7 +372,7 @@
 
   <section class="card" id="actionLog">
     <h2>Action log</h2>
-    <p class="format-mix-intro">Log what you did, in under ten seconds. Backfill is fine.</p>
+    <p class="format-mix-intro">Log what you did, in under ten seconds. It's fine to add this after the fact.</p>
     <form id="actionForm" class="field-grid">
       <div class="field">
         <label for="ac_type">Type</label>
@@ -426,7 +426,7 @@
       Drag and drop file(s) here, or
       <label for="fileInput">choose files</label>
       <input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,.xls" multiple>
-      <div style="margin-top:10px; font-size:13px;">CSV, TSV, or Excel (.xlsx/.xls). Raw exports from Meta/Facebook, Instagram, LinkedIn, Linktree, Mailchimp-style newsletters, and the Comms Impact Tracker are auto-detected and reshaped to weekly; anything else prompts a quick column-mapping step. See the README for the canonical schema.</div>
+      <div style="margin-top:10px; font-size:13px;">CSV, TSV, or Excel (.xlsx/.xls). Raw exports from Meta/Facebook, Instagram, LinkedIn, Linktree, Mailchimp-style newsletters, and the Comms Impact Tracker are auto-detected and reshaped to weekly; anything else prompts a quick column-mapping step. Not sure what columns to use? Download the template below.</div>
     </div>
     <div class="btn-row" style="margin-top:12px;">
       <button type="button" id="templateBtn">Download template CSV</button>
@@ -441,10 +441,10 @@
     <div id="studyEmpty" class="empty-state" hidden>Set a campaign goal above to see a study here.</div>
     <div id="studyBody" hidden>
       <div id="studyGoalStatus"></div>
-      <h3 class="format-mix-subhead">Funnel — campaign to date</h3>
+      <h3 class="format-mix-subhead">Funnel - campaign to date</h3>
       <div id="studyFunnel"></div>
       <h3 class="format-mix-subhead">Findings</h3>
-      <p class="format-mix-intro">Editable before export — these are observations from the numbers above, never claims about cause.</p>
+      <p class="format-mix-intro">Editable before export - these are observations from the numbers above, never claims about cause.</p>
       <div id="studyFindings"></div>
       <h3 class="format-mix-subhead">Limits</h3>
       <ul id="studyLimits"></ul>
@@ -458,7 +458,7 @@
 
   <section class="card" id="outcomesLog">
     <h2>Outcomes log</h2>
-    <p class="format-mix-intro">Any CDLS group can log a non-metric contribution to this campaign here — no metrics upload required.</p>
+    <p class="format-mix-intro">Any CDLS group can log something that helped this campaign, even without numbers to back it up.</p>
     <form id="outcomeForm" class="field-grid">
       <div class="field"><label for="oc_date">Date</label><input type="date" id="oc_date"></div>
       <div class="field"><label for="oc_group">Group</label><input type="text" id="oc_group" placeholder="e.g. Consortium"></div>
@@ -476,8 +476,8 @@
   </section>
 
   <section class="legacy-divider" aria-labelledby="legacyViewsHeading">
-    <h2 id="legacyViewsHeading">Legacy views</h2>
-    <p>The Pulse v1 dashboard, unchanged, kept below while the campaign-study flow above is verified.</p>
+    <h2 id="legacyViewsHeading">Weekly metrics</h2>
+    <p>Reach, clicks, and sign-ups by channel, week over week - separate from the campaign study above.</p>
   </section>
 
   <section class="card" id="filters">
@@ -508,28 +508,28 @@
     <div class="tablist" id="metricTabs" role="tablist" aria-label="Growth chart metric"></div>
     <div class="chart-shell">
       <canvas id="growthCanvas" role="img" aria-label="Line chart of the selected metric by channel over time"></canvas>
-      <div class="chart-fallback" id="chartFallback" hidden>Chart library unavailable — see the detail table below for the same numbers.</div>
+      <div class="chart-fallback" id="chartFallback" hidden>Chart library unavailable - see the detail table below for the same numbers.</div>
     </div>
     <div class="legend-row" id="growthLegend"></div>
   </section>
 
   <section class="card" id="funnel">
-    <h2>Funnel — selected week</h2>
+    <h2>Funnel - selected week</h2>
     <div id="funnelStages"></div>
     <div class="rate-row">
       <div class="rate-item">
         <div class="rate-label">Click-through rate (clicks ÷ reach)</div>
-        <div class="rate-value" id="ctrValue">—</div>
+        <div class="rate-value" id="ctrValue">-</div>
       </div>
       <div class="rate-item">
         <div class="rate-label">Conversion rate (sign-ups ÷ clicks)</div>
-        <div class="rate-value" id="convValue">—</div>
+        <div class="rate-value" id="convValue">-</div>
       </div>
     </div>
   </section>
 
   <section class="card" id="table">
-    <h2>Detail — selected week</h2>
+    <h2>Detail - selected week</h2>
     <div class="table-scroll">
       <table class="detail" id="detailTable">
         <thead>
@@ -545,7 +545,7 @@
 
   <section class="card" id="formatMix">
     <h2>Format Mix</h2>
-    <p class="format-mix-intro">Which content formats earn attention — fed by Meta/Instagram "Top content formats" exports. This is a companion view, separate from the growth and funnel numbers above.</p>
+    <p class="format-mix-intro">Which content formats earn attention - fed by Meta/Instagram "Top content formats" exports. This is a companion view, separate from the growth and funnel numbers above.</p>
     <div id="formatMixEmpty" class="empty-state" hidden>Load a "Top content formats" export to see which formats earn attention here.</div>
     <div id="formatMixBody" hidden>
       <div class="filter-group" style="margin-bottom:14px;">
@@ -1072,7 +1072,7 @@
       return { valid: false, error: "This doesn't look like a Pulse study file." };
     }
     if (payload.schemaVersion !== 1) {
-      return { valid: false, error: "This study file is schema version " + JSON.stringify(payload.schemaVersion) + ", which this version of Pulse doesn't understand (expected version 1)." };
+      return { valid: false, error: "This study file was made by a different version of Pulse, so it can't be opened here." };
     }
     return { valid: true, error: null };
   }
@@ -1517,7 +1517,7 @@
     if (includeNone) {
       var noneOpt = document.createElement("option");
       noneOpt.value = "";
-      noneOpt.textContent = "— none —";
+      noneOpt.textContent = "- none -";
       sel.appendChild(noneOpt);
     }
     OUTCOME_FIELD_OPTIONS.forEach(function (f) {
@@ -1553,7 +1553,7 @@
     summary.innerHTML =
       '<div class="campaign-summary-row">' +
       '<div class="item"><div class="label">Campaign</div><div class="value">' + escapeHtml(c.name) + '</div></div>' +
-      '<div class="item"><div class="label">Goal</div><div class="value">' + escapeHtml(c.outcomeLabel) + ' — target ' + fmt(c.targetCount) + '</div></div>' +
+      '<div class="item"><div class="label">Goal</div><div class="value">' + escapeHtml(c.outcomeLabel) + ' - target ' + fmt(c.targetCount) + '</div></div>' +
       '<div class="item"><div class="label">Tracking</div><div class="value">' + escapeHtml(outcomeLabel) + '</div></div>' +
       '<div class="item"><div class="label">Window</div><div class="value">' + escapeHtml(c.startDate) + ' → ' + escapeHtml(c.deadline) + '</div></div>' +
       rateBit +
@@ -1628,7 +1628,7 @@
     empty.hidden = true;
     actions.forEach(function (a) {
       var tr = document.createElement("tr");
-      tr.innerHTML = "<td>" + escapeHtml(a.date) + "</td><td>" + escapeHtml(a.type) + "</td><td>" + escapeHtml(a.channel || "—") + "</td><td>" + escapeHtml(a.audience) + "</td><td>" + escapeHtml(a.note || "") + "</td><td></td>";
+      tr.innerHTML = "<td>" + escapeHtml(a.date) + "</td><td>" + escapeHtml(a.type) + "</td><td>" + escapeHtml(a.channel || "-") + "</td><td>" + escapeHtml(a.audience) + "</td><td>" + escapeHtml(a.note || "") + "</td><td></td>";
       var delBtn = document.createElement("button");
       delBtn.type = "button";
       delBtn.textContent = "Remove";
@@ -1675,7 +1675,7 @@
         link.textContent = "link";
         evidenceCell.appendChild(link);
       } else {
-        evidenceCell.textContent = "—";
+        evidenceCell.textContent = "-";
       }
       var delBtn = document.createElement("button");
       delBtn.type = "button";
@@ -1702,6 +1702,18 @@
   var GOAL_STATUS_LABELS = {
     reached: "Goal reached", on_pace: "On pace", behind: "Behind pace", insufficient_data: "Not enough data yet"
   };
+  // buildFindings() tags each finding with which engine function produced it
+  // (a stable, machine-readable key - useful for debugging and tests). This
+  // translates that key to plain language for display; the raw key itself
+  // should never reach the screen or the PDF.
+  var EVIDENCE_LABELS = {
+    progressToGoal: "based on progress toward the goal",
+    classifyWeek: "based on what was logged that week",
+    outcomeSeries: "based on the uploaded weekly numbers",
+    liftForWeek: "based on the change from the weeks before",
+    "liftForWeek + channelMatch": "based on the change from prior weeks and that channel's numbers"
+  };
+  function evidenceLabel(evidence) { return EVIDENCE_LABELS[evidence] || evidence; }
 
   function renderStudy() {
     var empty = document.getElementById("studyEmpty");
@@ -1731,8 +1743,8 @@
       '<div class="item"><div class="label">Current</div><div class="value">' + fmt(progress.current) + ' of ' + fmt(progress.target) + '</div></div>' +
       '<div class="item"><div class="label">Remaining</div><div class="value">' + fmt(progress.remaining) + '</div></div>' +
       '<div class="item"><div class="label">Weeks left</div><div class="value">' + progress.weeksLeft + '</div></div>' +
-      '<div class="item"><div class="label">Pace needed / wk</div><div class="value">' + (progress.paceNeededPerWeek !== null ? progress.paceNeededPerWeek.toFixed(1) : "—") + '</div></div>' +
-      '<div class="item"><div class="label">Recent pace / wk</div><div class="value">' + (progress.recentPacePerWeek !== null ? progress.recentPacePerWeek.toFixed(1) : "—") + '</div></div>' +
+      '<div class="item"><div class="label">Pace needed per week</div><div class="value">' + (progress.paceNeededPerWeek !== null ? progress.paceNeededPerWeek.toFixed(1) : "-") + '</div></div>' +
+      '<div class="item"><div class="label">Recent pace per week</div><div class="value">' + (progress.recentPacePerWeek !== null ? progress.recentPacePerWeek.toFixed(1) : "-") + '</div></div>' +
       '</div>';
 
     var funnelEl = document.getElementById("studyFunnel");
@@ -1757,7 +1769,7 @@
     var findingsEl = document.getElementById("studyFindings");
     findingsEl.innerHTML = "";
     if (!result.findings.length) {
-      findingsEl.innerHTML = '<div class="empty-state">No findings yet — upload metrics and log actions for this campaign to see findings here.</div>';
+      findingsEl.innerHTML = '<div class="empty-state">No findings yet - upload metrics and log actions for this campaign to see findings here.</div>';
     }
     result.findings.forEach(function (f) {
       var row = document.createElement("div");
@@ -1771,7 +1783,7 @@
       row.appendChild(textarea);
       var evidence = document.createElement("div");
       evidence.className = "finding-evidence";
-      evidence.textContent = "Evidence: " + f.evidence;
+      evidence.textContent = "Evidence: " + evidenceLabel(f.evidence);
       row.appendChild(evidence);
       findingsEl.appendChild(row);
     });
@@ -1995,8 +2007,8 @@
       container.appendChild(row);
     });
 
-    document.getElementById("ctrValue").textContent = reach > 0 ? ((clicks / reach) * 100).toFixed(2) + "%" : "—";
-    document.getElementById("convValue").textContent = clicks > 0 ? ((conversions / clicks) * 100).toFixed(2) + "%" : "—";
+    document.getElementById("ctrValue").textContent = reach > 0 ? ((clicks / reach) * 100).toFixed(2) + "%" : "-";
+    document.getElementById("convValue").textContent = clicks > 0 ? ((conversions / clicks) * 100).toFixed(2) + "%" : "-";
   }
 
   function renderTable() {
@@ -2108,7 +2120,7 @@
     var note = document.getElementById("formatMixFunnelNote");
     if (!state.rows.length) {
       note.style.display = "block";
-      note.textContent = "The growth and funnel views above need the Meta overview (reach/engagement) and audience (followers) exports, plus Linktree/Forms/Newsletter for clicks and sign-ups — none of that is loaded right now. This Format Mix view only shows which content formats earn attention; it can't substitute for the funnel.";
+      note.textContent = "The growth and funnel views above need the Meta overview (reach/engagement) and audience (followers) exports, plus Linktree/Forms/Newsletter for clicks and sign-ups - none of that is loaded right now. This Format Mix view only shows which content formats earn attention; it can't substitute for the funnel.";
     } else {
       note.style.display = "none";
     }
@@ -2144,7 +2156,7 @@
         var pTotal = pRows.reduce(function (s, r) { return s + r.views; }, 0);
         var cells = allFormats.map(function (f) {
           var r = pRows.find(function (r2) { return r2.format === f; });
-          if (!r || pTotal <= 0) return "<td>—</td>";
+          if (!r || pTotal <= 0) return "<td>-</td>";
           return "<td>" + ((r.views / pTotal) * 100).toFixed(0) + "%</td>";
         }).join("");
         return "<tr><td>Week of " + formatWeekLabel(p) + "</td>" + cells + "</tr>";
@@ -2268,7 +2280,7 @@
     }
     paragraphs.push(channelSentence);
 
-    paragraphs.push("Note: reach is not de-duplicated across platforms, and these are observations drawn from the numbers above — not explanations of why they moved.");
+    paragraphs.push("Note: reach is not de-duplicated across platforms, and these are observations drawn from the numbers above - not explanations of why they moved.");
 
     return paragraphs;
   }
@@ -2277,7 +2289,7 @@
   function generatePdfReport() {
     if (!state.selectedWeek) { alert("No data loaded to report on."); return; }
     if (typeof window.jspdf === "undefined") {
-      alert("PDF library failed to load (offline / CDN blocked). Try the offline build (index.offline.html).");
+      alert("The PDF tool couldn't load - this usually means there's no internet connection right now. If you have an offline copy of this page, try that one instead.");
       return;
     }
     var week = state.selectedWeek;
@@ -2318,7 +2330,7 @@
     }
 
     // Header
-    heading("Pulse — Weekly Report", 18);
+    heading("Pulse - Weekly Report", 18);
     doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(40, 40, 40);
     doc.text("Week of " + formatWeekLabel(week), margin, y); y += 16;
     doc.setFontSize(9); doc.setTextColor(120, 120, 120);
@@ -2367,8 +2379,8 @@
     });
     ensureSpace(16);
     doc.setFontSize(10.5);
-    doc.text("Click-through rate: " + (f.ctr !== null ? (f.ctr * 100).toFixed(2) + "%" : "—") +
-      "    Conversion rate: " + (f.convRate !== null ? (f.convRate * 100).toFixed(2) + "%" : "—"), margin, y);
+    doc.text("Click-through rate: " + (f.ctr !== null ? (f.ctr * 100).toFixed(2) + "%" : "-") +
+      "    Conversion rate: " + (f.convRate !== null ? (f.convRate * 100).toFixed(2) + "%" : "-"), margin, y);
     y += 22;
 
     // Growth chart image
@@ -2379,7 +2391,7 @@
         var imgW = contentW;
         var imgH = imgW * (canvas.height / canvas.width);
         ensureSpace(imgH + 24);
-        heading("Growth — " + METRICS.find(function (m) { return m.key === state.metric; }).label, 13);
+        heading("Growth - " + METRICS.find(function (m) { return m.key === state.metric; }).label, 13);
         doc.addImage(imgData, "PNG", margin, y, imgW, imgH);
         y += imgH + 16;
       } catch (e) {
@@ -2393,7 +2405,7 @@
     }
 
     // Detail table
-    heading("Detail — by channel", 13);
+    heading("Detail - by channel", 13);
     var cols = [
       { label: "Channel", x: margin, w: 130, align: "left" },
       { label: "Reach", x: margin + 130, w: 65, align: "right" },
@@ -2440,11 +2452,11 @@
 
     // Interpretation
     heading("What this means", 13);
-    bodyText("Plain-language read of the numbers above, generated locally by simple rules — not a causal analysis.", 9, [120, 120, 120]);
+    bodyText("Plain-language read of the numbers above, generated locally by simple rules - not a causal analysis.", 9, [120, 120, 120]);
     y += 4;
     buildInterpretation(week, channelSet).forEach(function (para) { bodyText(para, 10.5); y += 4; });
 
-    // Study — calls the same engine functions renderStudy() does, so the
+    // Study - calls the same engine functions renderStudy() does, so the
     // PDF matches the on-screen study exactly (acceptance criteria).
     if (state.campaign) {
       doc.addPage(); y = margin;
@@ -2455,12 +2467,12 @@
       var funnel = funnelByStage(state.rows, campaign);
       var studyResult = buildFindings({ rows: state.rows, actions: state.actions, campaign: campaign, today: today });
 
-      heading("Study — " + campaign.name, 16);
+      heading("Study - " + campaign.name, 16);
       bodyText(campaign.outcomeLabel + " · " + campaign.startDate + " to " + campaign.deadline, 10, [90, 90, 90]);
       y += 6;
 
       heading("Goal status", 13);
-      bodyText((GOAL_STATUS_LABELS[progress.status] || progress.status) + " — " + fmt(progress.current) + " of " + fmt(progress.target) +
+      bodyText((GOAL_STATUS_LABELS[progress.status] || progress.status) + " - " + fmt(progress.current) + " of " + fmt(progress.target) +
         " (" + fmt(progress.remaining) + " remaining, " + progress.weeksLeft + " week(s) left)", 10.5);
       if (progress.recentPacePerWeek !== null) {
         bodyText("Recent pace: " + progress.recentPacePerWeek.toFixed(1) + " / week" +
@@ -2468,7 +2480,7 @@
       }
       y += 6;
 
-      heading("Funnel — campaign to date", 13);
+      heading("Funnel - campaign to date", 13);
       [
         { name: "Reach", value: funnel.reach },
         { name: "Engagement", value: funnel.engagements },
@@ -2485,7 +2497,7 @@
 
       heading("Findings", 13);
       if (!studyResult.findings.length) {
-        bodyText("No findings yet — upload metrics and log actions for this campaign to see findings here.", 10);
+        bodyText("No findings yet - upload metrics and log actions for this campaign to see findings here.", 10);
       }
       studyResult.findings.forEach(function (f) {
         var typeLabel = f.type === "observed" ? "Observed" : f.type === "associated" ? "Associated" : "Not testable";
@@ -2504,7 +2516,7 @@
     for (var p = 1; p <= pageCount; p++) {
       doc.setPage(p);
       doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(140, 140, 140);
-      doc.text("This report contains aggregate counts only — no personal data. Generated entirely in your browser; nothing was uploaded.", margin, pageH - 20);
+      doc.text("This report contains aggregate counts only - no personal data. Generated entirely in your browser; nothing was uploaded.", margin, pageH - 20);
       doc.text(String(p) + " / " + pageCount, pageW - margin, pageH - 20, { align: "right" });
     }
 
@@ -2612,7 +2624,7 @@
 
       var help = document.createElement("p");
       help.className = "mapping-help";
-      help.textContent = "This file didn't match the canonical schema or a known platform export. Match its columns to the fields below, or skip it - nothing here is saved.";
+      help.textContent = "This file doesn't match the standard layout or a known platform export. Match its columns to the fields below, or skip it - nothing here is saved.";
       panel.appendChild(help);
 
       var grid = document.createElement("div");
@@ -2632,7 +2644,7 @@
         return row;
       }
 
-      var weekSelect = makeSelect("map_week_col", "— none (enter one date for the whole file) —", guessColumn(CANONICAL_ALIASES.week));
+      var weekSelect = makeSelect("map_week_col", "- none (enter one date for the whole file) -", guessColumn(CANONICAL_ALIASES.week));
       var weekFixed = document.createElement("input");
       weekFixed.type = "date";
       weekFixed.id = "map_week_fixed";
@@ -2640,7 +2652,7 @@
       addRow("Week / date column", weekSelect, weekFixed);
       weekSelect.addEventListener("change", function () { weekFixed.hidden = !!weekSelect.value; });
 
-      var chSelect = makeSelect("map_channel_col", "— none (type one channel for the whole file) —", guessColumn(CANONICAL_ALIASES.channel));
+      var chSelect = makeSelect("map_channel_col", "- none (type one channel for the whole file) -", guessColumn(CANONICAL_ALIASES.channel));
       var chFixed = document.createElement("input");
       chFixed.type = "text";
       chFixed.id = "map_channel_fixed";
@@ -2661,7 +2673,7 @@
       ];
       var metricSelects = {};
       metricFieldDefs.forEach(function (f) {
-        var select = makeSelect("map_" + f.key, "— not in this file —", guessColumn(f.aliases));
+        var select = makeSelect("map_" + f.key, "- not in this file -", guessColumn(f.aliases));
         addRow(f.label, select);
         metricSelects[f.key] = select;
       });
@@ -2798,7 +2810,7 @@
     var needsPapa = files.some(function (f) { return /\.(csv|tsv)$/i.test(f.name); }) && typeof Papa === "undefined";
     var needsXlsx = files.some(function (f) { return /\.(xlsx|xls)$/i.test(f.name); }) && typeof XLSX === "undefined";
     if (needsPapa || needsXlsx) {
-      alert("A required file parser failed to load (offline / CDN blocked). Try the offline build (index.offline.html).");
+      alert("The file reader couldn't load - this usually means there's no internet connection right now. If you have an offline copy of this page, try that one instead.");
       return;
     }
 
@@ -2947,7 +2959,7 @@
       try {
         payload = JSON.parse(reader.result);
       } catch (e) {
-        alert("This file isn't valid JSON, so it can't be a Pulse study file.");
+        alert("This doesn't look like a Pulse study file.");
         input.value = "";
         return;
       }
