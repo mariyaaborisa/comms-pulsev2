@@ -1965,15 +1965,15 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     var outcomeLabel = (OUTCOME_FIELD_OPTIONS.filter(function (f) { return f.key === c.outcomeField; })[0] || {}).label || c.outcomeField;
     var rateBit = c.rateNumeratorField && c.rateDenominatorField
       ? '<div class="item"><div class="label">Secondary rate</div><div class="value">' +
-        (OUTCOME_FIELD_OPTIONS.filter(function (f) { return f.key === c.rateNumeratorField; })[0] || {}).label + " / " +
-        (OUTCOME_FIELD_OPTIONS.filter(function (f) { return f.key === c.rateDenominatorField; })[0] || {}).label + '</div></div>'
+        escapeHtml((OUTCOME_FIELD_OPTIONS.filter(function (f) { return f.key === c.rateNumeratorField; })[0] || {}).label) + " / " +
+        escapeHtml((OUTCOME_FIELD_OPTIONS.filter(function (f) { return f.key === c.rateDenominatorField; })[0] || {}).label) + '</div></div>'
       : "";
     summary.innerHTML =
       '<div class="campaign-summary-row">' +
-      '<div class="item"><div class="label">Campaign</div><div class="value">' + c.name + '</div></div>' +
-      '<div class="item"><div class="label">Goal</div><div class="value">' + c.outcomeLabel + ' — target ' + fmt(c.targetCount) + '</div></div>' +
-      '<div class="item"><div class="label">Tracking</div><div class="value">' + outcomeLabel + '</div></div>' +
-      '<div class="item"><div class="label">Window</div><div class="value">' + c.startDate + ' → ' + c.deadline + '</div></div>' +
+      '<div class="item"><div class="label">Campaign</div><div class="value">' + escapeHtml(c.name) + '</div></div>' +
+      '<div class="item"><div class="label">Goal</div><div class="value">' + escapeHtml(c.outcomeLabel) + ' — target ' + fmt(c.targetCount) + '</div></div>' +
+      '<div class="item"><div class="label">Tracking</div><div class="value">' + escapeHtml(outcomeLabel) + '</div></div>' +
+      '<div class="item"><div class="label">Window</div><div class="value">' + escapeHtml(c.startDate) + ' → ' + escapeHtml(c.deadline) + '</div></div>' +
       rateBit +
       '</div>' +
       '<button type="button" id="editCampaignBtn">Edit campaign goal</button>';
