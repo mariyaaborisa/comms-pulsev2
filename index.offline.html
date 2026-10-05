@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CDLS Comms Pulse</title>
+<title>Comms Analytics Study</title>
 <meta name="description" content="Stateless, client-side weekly communications dashboard. No accounts, no backend, no data leaves the browser.">
 <style>
   :root {
@@ -287,7 +287,7 @@
 
   <header class="app-header">
     <div>
-      <h1>CDLS Comms Pulse</h1>
+      <h1>Comms Analytics Study</h1>
       <p>Drop in weekly CSV exports to see growth trends and the click→sign-up funnel across every channel. Everything runs in this browser tab; nothing is uploaded anywhere.</p>
     </div>
     <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle color theme">🌓 Theme: <span id="themeLabel">System</span></button>
@@ -1518,10 +1518,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   // ---------- Pulse v2: study file (schemaVersion check only - pure) ----------
   function validateStudyFile(payload) {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      return { valid: false, error: "This doesn't look like a Pulse study file." };
+      return { valid: false, error: "This doesn't look like a Comms Analytics Study file." };
     }
     if (payload.schemaVersion !== 1) {
-      return { valid: false, error: "This study file was made by a different version of Pulse, so it can't be opened here." };
+      return { valid: false, error: "This study file was made by a different version of Comms Analytics Study, so it can't be opened here." };
     }
     return { valid: true, error: null };
   }
@@ -2779,7 +2779,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }
 
     // Header
-    heading("Pulse - Weekly Report", 18);
+    heading("Comms Analytics Study - Weekly Report", 18);
     doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(40, 40, 40);
     doc.text("Week of " + formatWeekLabel(week), margin, y); y += 16;
     doc.setFontSize(9); doc.setTextColor(120, 120, 120);
@@ -3408,7 +3408,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       try {
         payload = JSON.parse(reader.result);
       } catch (e) {
-        alert("This doesn't look like a Pulse study file.");
+        alert("This doesn't look like a Comms Analytics Study file.");
         input.value = "";
         return;
       }
