@@ -1,6 +1,6 @@
-# Pulse (turbo-telegram)
+# Pulse 
 
-CDLS impact analysis internal tool. Reports weekly metrics (v1) and,
+A CDLS impact analysis internal tool. Reports weekly metrics (v1) and,
 since Pulse v2, tells you whether a specific campaign worked toward its
 goal, what seems to have contributed, and what you can't see.
 
